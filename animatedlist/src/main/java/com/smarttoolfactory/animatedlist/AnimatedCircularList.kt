@@ -1,12 +1,244 @@
+@file:OptIn(ExperimentalSnapperApi::class)
+
 package com.smarttoolfactory.animatedlist
 
 import android.animation.ArgbEvaluator
-import androidx.compose.foundation.lazy.LazyListItemInfo
-import androidx.compose.foundation.lazy.LazyListLayoutInfo
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.smarttoolfactory.animatedlist.model.AnimationProgress
+import dev.chrisbanes.snapper.ExperimentalSnapperApi
+import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
 import kotlin.math.absoluteValue
+
+/**
+ *  Infinite list with color and scale animation for selecting aspect ratio
+ *
+ * @param items the data list
+ * @param visibleItemCount count of items that are visible at any time
+ * @param spaceBetweenItems padding between 2 items
+ * @param activeColor color of selected item
+ * @param inactiveColor color of items are not selected
+ * @param key a factory of stable and unique keys representing the item. Using the same key
+ * for multiple items in the list is not allowed. Type of the key should be saveable
+ * via Bundle on Android. If null is passed the position in the list will represent the key.
+ * When you specify the key the scroll position will be maintained based on the key, which
+ * means if you add/remove items before the current visible item the item with the given key
+ * will be kept as the first visible one.
+ * @param contentType a factory of the content types for the item. The item compositions of
+ * the same type could be reused more efficiently. Note that null is a valid type and items of such
+ * type will be considered compatible.
+ * @param itemContent the content displayed by a single item
+ */
+@Composable
+fun <T> AnimatedCircularList(
+    modifier: Modifier = Modifier,
+    items: List<T>,
+    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    lazyListState: LazyListState = rememberLazyListState(initialFistVisibleIndex),
+    visibleItemCount: Int = 5,
+    activeItemSize: Dp,
+    inactiveItemSize: Dp,
+    spaceBetweenItems: Dp = 4.dp,
+    selectorIndex: Int = visibleItemCount / 2,
+    activeColor: Color = Color.Cyan,
+    inactiveColor: Color = Color.Gray,
+    orientation: Orientation = Orientation.Horizontal,
+    key: ((index: Int) -> Any)? = null,
+    contentType: (index: Int) -> Any? = { null },
+    itemContent: @Composable LazyItemScope.(
+        animationProgress: AnimationProgress, index: Int, size: Dp
+    ) -> Unit
+) {
+    val inactiveItemScale = inactiveItemSize.value / activeItemSize.value
+    val size = activeItemSize * visibleItemCount + spaceBetweenItems * (visibleItemCount - 1)
+
+    AnimatedCircularList(
+        modifier = modifier.defaultMinSize(size),
+        items = items,
+        initialFistVisibleIndex = initialFistVisibleIndex,
+        lazyListState = lazyListState,
+        visibleItemCount = visibleItemCount,
+        spaceBetweenItems = spaceBetweenItems,
+        selectorIndex = selectorIndex,
+        activeColor = activeColor,
+        inactiveColor = inactiveColor,
+        inactiveItemScale = inactiveItemScale,
+        orientation = orientation,
+        key = key,
+        contentType = contentType,
+        itemContent = itemContent,
+    )
+}
+
+
+/**
+ *  Infinite list with color and scale animation for selecting aspect ratio
+ *
+ * @param items the data list
+ * @param visibleItemCount count of items that are visible at any time
+ * @param spaceBetweenItems padding between 2 items
+ * @param activeColor color of selected item
+ * @param inactiveColor color of items are not selected
+ * @param key a factory of stable and unique keys representing the item. Using the same key
+ * for multiple items in the list is not allowed. Type of the key should be saveable
+ * via Bundle on Android. If null is passed the position in the list will represent the key.
+ * When you specify the key the scroll position will be maintained based on the key, which
+ * means if you add/remove items before the current visible item the item with the given key
+ * will be kept as the first visible one.
+ * @param contentType a factory of the content types for the item. The item compositions of
+ * the same type could be reused more efficiently. Note that null is a valid type and items of such
+ * type will be considered compatible.
+ * @param itemContent the content displayed by a single item
+ */
+@OptIn(ExperimentalSnapperApi::class)
+@Composable
+fun <T> AnimatedCircularList(
+    modifier: Modifier = Modifier,
+    items: List<T>,
+    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    lazyListState: LazyListState = rememberLazyListState(initialFistVisibleIndex),
+    visibleItemCount: Int = 5,
+    spaceBetweenItems: Dp = 4.dp,
+    selectorIndex: Int = visibleItemCount / 2,
+    activeColor: Color = ActiveColor,
+    inactiveColor: Color = InactiveColor,
+    inactiveItemScale: Float = .85f,
+    orientation: Orientation = Orientation.Horizontal,
+    key: ((index: Int) -> Any)? = null,
+    contentType: (index: Int) -> Any? = { null },
+    itemContent: @Composable LazyItemScope.(
+        animationProgress: AnimationProgress, index: Int, size: Dp
+    ) -> Unit,
+) {
+
+    val flingBehavior = rememberSnapperFlingBehavior(
+        lazyListState = lazyListState
+    )
+
+    val argbEvaluator = remember { ArgbEvaluator() }
+
+    val selectedColor = remember(activeColor) { activeColor.toArgb() }
+    val unSelectedColor = remember(inactiveColor) { inactiveColor.toArgb() }
+
+    // Index of selector(item that is selected)  in circular list
+    val indexOfSelector = selectorIndex.coerceIn(0, visibleItemCount - 1)
+
+    // number of items
+    val totalItemCount = items.size
+
+    BoxWithConstraints(modifier = modifier) {
+
+        val availableSpace = constraints.maxWidth.toFloat()
+        val density = LocalDensity.current
+        val spaceBetweenItemsPx = density.run { spaceBetweenItems.toPx() }
+
+        val itemWidth =
+            (availableSpace - spaceBetweenItemsPx * (visibleItemCount - 1)) / visibleItemCount
+        val itemWidthDp = density.run { itemWidth.toDp() }
+
+        val content: LazyListScope.() -> Unit = {
+            items(
+                count = Int.MAX_VALUE, key = key, contentType = contentType
+            ) { globalIndex ->
+                AnimatedItems(
+                    lazyListState = lazyListState,
+                    argbEvaluator = argbEvaluator,
+                    initialFistVisibleIndex = initialFistVisibleIndex,
+                    indexOfSelector = indexOfSelector,
+                    globalIndex = globalIndex,
+                    availableSpace = availableSpace,
+                    itemWidth = itemWidthDp,
+                    spaceBetweenItems = spaceBetweenItemsPx,
+                    visibleItemCount = visibleItemCount,
+                    totalItemCount = totalItemCount,
+                    inactiveItemScale = inactiveItemScale,
+                    inactiveColor = unSelectedColor,
+                    activeColor = selectedColor
+                ) { animationProgress: AnimationProgress, width: Dp ->
+                    itemContent(animationProgress, globalIndex % totalItemCount, width)
+                }
+            }
+        }
+
+        if (orientation == Orientation.Horizontal) {
+            LazyRow(
+                modifier = modifier,
+                state = lazyListState,
+                horizontalArrangement = Arrangement.spacedBy(spaceBetweenItems),
+                flingBehavior = flingBehavior
+            ) {
+                content()
+            }
+        } else {
+            LazyColumn(
+                modifier = modifier,
+                state = lazyListState,
+                verticalArrangement = Arrangement.spacedBy(spaceBetweenItems),
+                flingBehavior = flingBehavior
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun LazyItemScope.AnimatedItems(
+    lazyListState: LazyListState,
+    argbEvaluator: ArgbEvaluator,
+    initialFistVisibleIndex: Int,
+    indexOfSelector: Int,
+    globalIndex: Int,
+    availableSpace: Float,
+    itemWidth: Dp,
+    spaceBetweenItems: Float,
+    visibleItemCount: Int,
+    totalItemCount: Int,
+    inactiveItemScale: Float,
+    inactiveColor: Int,
+    activeColor: Int,
+    itemContent: @Composable LazyItemScope.(animationProgress: AnimationProgress, size: Dp) -> Unit
+
+) {
+    var selectedIndex by remember {
+        mutableStateOf(-1)
+    }
+
+    val itemWidthPx = LocalDensity.current.run { itemWidth.toPx() }
+
+    val animationData by remember {
+        derivedStateOf {
+            val animationData = getAnimationProgress(
+                lazyListState = lazyListState,
+                argbEvaluator = argbEvaluator,
+                initialFistVisibleIndex = initialFistVisibleIndex,
+                indexOfSelector = indexOfSelector,
+                globalIndex = globalIndex,
+                selectedIndex = selectedIndex,
+                availableSpace = availableSpace,
+                itemSize = itemWidthPx,
+                spaceBetweenItems = spaceBetweenItems,
+                visibleItemCount = visibleItemCount,
+                totalItemCount = totalItemCount,
+                inactiveScale = inactiveItemScale,
+                inactiveColor = inactiveColor,
+                activeColor = activeColor
+            )
+
+            selectedIndex = animationData.globalItemIndex
+            animationData
+        }
+    }
+    itemContent(animationData, itemWidth)
+}
 
 /**
  * get color, scale and selected index for scroll progress for infinite or circular list with
@@ -122,7 +354,6 @@ private fun getAnimationProgress(
     )
 }
 
-
 /**
  * get scale based on whether it's initial run of list,
  * [LazyListState]'S [LazyListLayoutInfo.visibleItemsInfo]  list is empty,
@@ -192,4 +423,3 @@ private fun calculateScale(
 
     }.coerceIn(minimum, 1f)
 }
-
