@@ -56,7 +56,8 @@ fun <T> AnimatedCircularList(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp) -> Unit
+        animationProgress: AnimationProgress, index: Int, size: Dp
+    ) -> Unit
 ) {
     val inactiveItemScale = inactiveItemSize.value / activeItemSize.value
 
@@ -150,7 +151,8 @@ fun <T> AnimatedCircularList(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp) -> Unit
+        animationProgress: AnimationProgress, index: Int, size: Dp
+    ) -> Unit
 ) {
 
     val flingBehavior = rememberSnapperFlingBehavior(
@@ -168,7 +170,13 @@ fun <T> AnimatedCircularList(
     // number of items
     val totalItemCount = items.size
 
-    BoxWithConstraints(modifier = modifier) {
+    val listModifier = if (orientation == Orientation.Horizontal) {
+        modifier.fillMaxWidth()
+    } else {
+        modifier.fillMaxHeight()
+    }
+
+    BoxWithConstraints(modifier = listModifier) {
 
         val availableSpace =
             if (orientation == Orientation.Horizontal) constraints.maxWidth.toFloat() else
@@ -181,74 +189,52 @@ fun <T> AnimatedCircularList(
             (availableSpace - spaceBetweenItemsPx * (visibleItemCount - 1)) / visibleItemCount
         val itemSizeDp = density.run { itemSize.toDp() }
 
-        val content: LazyListScope.() -> Unit = {
-            items(
-                count = Int.MAX_VALUE, key = key, contentType = contentType
-            ) { globalIndex ->
-                AnimatedItems(
-                    lazyListState = lazyListState,
-                    argbEvaluator = argbEvaluator,
-                    initialFistVisibleIndex = initialFistVisibleIndex,
-                    indexOfSelector = indexOfSelector,
-                    globalIndex = globalIndex,
-                    availableSpace = availableSpace,
-                    itemSize = itemSizeDp,
-                    spaceBetweenItems = spaceBetweenItemsPx,
-                    visibleItemCount = visibleItemCount,
-                    totalItemCount = totalItemCount,
-                    inactiveItemScale = inactiveItemScale,
-                    inactiveColor = unSelectedColor,
-                    activeColor = selectedColor
-                ) { animationProgress: AnimationProgress, size: Dp ->
-                    itemContent(animationProgress, globalIndex % totalItemCount, size)
-                }
-            }
-        }
-
-        if (orientation == Orientation.Horizontal) {
-            LazyRow(
-                modifier = modifier,
-                state = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(spaceBetweenItems),
-                flingBehavior = flingBehavior
-            ) {
-                content()
-            }
-        } else {
-            LazyColumn(
-                modifier = modifier,
-                state = lazyListState,
-                verticalArrangement = Arrangement.spacedBy(spaceBetweenItems),
-                flingBehavior = flingBehavior
-            ) {
-                content()
-            }
-        }
+        AnimatedCircularListImpl(
+            modifier = listModifier,
+            lazyListState = lazyListState,
+            flingBehavior = flingBehavior,
+            initialFistVisibleIndex = initialFistVisibleIndex,
+            visibleItemCount = visibleItemCount,
+            availableSpace = availableSpace,
+            itemSize = itemSizeDp,
+            spaceBetweenItems = spaceBetweenItems,
+            argbEvaluator = argbEvaluator,
+            totalItemCount = totalItemCount,
+            indexOfSelector = indexOfSelector,
+            activeColor = selectedColor,
+            inactiveColor = unSelectedColor,
+            inactiveItemScale = inactiveItemScale,
+            orientation = orientation,
+            key = key,
+            contentType = contentType,
+            itemContent = itemContent
+        )
     }
 }
 
 @Composable
 private fun AnimatedCircularListImpl(
-    modifier:Modifier,
-    lazyListState:LazyListState,
-    flingBehavior:FlingBehavior,
-    initialFistVisibleIndex:Int,
-    visibleItemCount:Int,
-    availableSpace:Float,
-    itemSize:Dp,
-    spaceBetweenItems:Dp,
-    argbEvaluator:ArgbEvaluator,
-    totalItemCount:Int,
-    indexOfSelector:Int,
-    activeColor:Int,
-    inactiveColor:Int,
-    inactiveItemScale:Float,
-    orientation:Orientation,
+    modifier: Modifier,
+    lazyListState: LazyListState,
+    flingBehavior: FlingBehavior,
+    initialFistVisibleIndex: Int,
+    visibleItemCount: Int,
+    availableSpace: Float,
+    itemSize: Dp,
+    spaceBetweenItems: Dp,
+    argbEvaluator: ArgbEvaluator,
+    totalItemCount: Int,
+    indexOfSelector: Int,
+    activeColor: Int,
+    inactiveColor: Int,
+    inactiveItemScale: Float,
+    orientation: Orientation,
     key: ((index: Int) -> Any)?,
     contentType: (index: Int) -> Any?,
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp) -> Unit
-){
+        animationProgress: AnimationProgress, index: Int, size: Dp
+    ) -> Unit
+) {
 
     val density = LocalDensity.current
     val spaceBetweenItemsPx = density.run { spaceBetweenItems.toPx() }
