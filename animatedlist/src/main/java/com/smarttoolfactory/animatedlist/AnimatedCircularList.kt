@@ -3,10 +3,12 @@
 package com.smarttoolfactory.animatedlist
 
 import android.animation.ArgbEvaluator
+import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -54,30 +56,63 @@ fun <T> AnimatedCircularList(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp
-    ) -> Unit
+        animationProgress: AnimationProgress, index: Int, size: Dp) -> Unit
 ) {
     val inactiveItemScale = inactiveItemSize.value / activeItemSize.value
-    val size = activeItemSize * visibleItemCount + spaceBetweenItems * (visibleItemCount - 1)
 
-    AnimatedCircularList(
-        modifier = modifier.defaultMinSize(size),
-        items = items,
-        initialFistVisibleIndex = initialFistVisibleIndex,
-        lazyListState = lazyListState,
-        visibleItemCount = visibleItemCount,
-        spaceBetweenItems = spaceBetweenItems,
-        selectorIndex = selectorIndex,
-        activeColor = activeColor,
-        inactiveColor = inactiveColor,
-        inactiveItemScale = inactiveItemScale,
-        orientation = orientation,
-        key = key,
-        contentType = contentType,
-        itemContent = itemContent,
+    val listDimension =
+        activeItemSize * visibleItemCount + spaceBetweenItems * (visibleItemCount - 1)
+
+    val listModifier = if (orientation == Orientation.Horizontal) {
+        Modifier.width(listDimension)
+    } else {
+        Modifier.height(listDimension)
+
+    }
+
+    val flingBehavior = rememberSnapperFlingBehavior(
+        lazyListState = lazyListState
     )
-}
 
+    val argbEvaluator = remember { ArgbEvaluator() }
+
+    val selectedColor = remember(activeColor) { activeColor.toArgb() }
+    val unSelectedColor = remember(inactiveColor) { inactiveColor.toArgb() }
+
+    // Index of selector(item that is selected)  in circular list
+    val indexOfSelector = selectorIndex.coerceIn(0, visibleItemCount - 1)
+
+    // number of items
+    val totalItemCount = items.size
+
+    val availableSpace = LocalDensity.current.run { listDimension.toPx() }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedCircularListImpl(
+            modifier = listModifier,
+            lazyListState = lazyListState,
+            flingBehavior = flingBehavior,
+            initialFistVisibleIndex = initialFistVisibleIndex,
+            visibleItemCount = visibleItemCount,
+            availableSpace = availableSpace,
+            itemSize = activeItemSize,
+            spaceBetweenItems = spaceBetweenItems,
+            argbEvaluator = argbEvaluator,
+            totalItemCount = totalItemCount,
+            indexOfSelector = indexOfSelector,
+            activeColor = selectedColor,
+            inactiveColor = unSelectedColor,
+            inactiveItemScale = inactiveItemScale,
+            orientation = orientation,
+            key = key,
+            contentType = contentType,
+            itemContent = itemContent
+        )
+    }
+}
 
 /**
  *  Infinite list with color and scale animation for selecting aspect ratio
@@ -115,8 +150,7 @@ fun <T> AnimatedCircularList(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp
-    ) -> Unit,
+        animationProgress: AnimationProgress, index: Int, size: Dp) -> Unit
 ) {
 
     val flingBehavior = rememberSnapperFlingBehavior(
@@ -136,13 +170,16 @@ fun <T> AnimatedCircularList(
 
     BoxWithConstraints(modifier = modifier) {
 
-        val availableSpace = constraints.maxWidth.toFloat()
+        val availableSpace =
+            if (orientation == Orientation.Horizontal) constraints.maxWidth.toFloat() else
+                constraints.maxHeight.toFloat()
+
         val density = LocalDensity.current
         val spaceBetweenItemsPx = density.run { spaceBetweenItems.toPx() }
 
-        val itemWidth =
+        val itemSize =
             (availableSpace - spaceBetweenItemsPx * (visibleItemCount - 1)) / visibleItemCount
-        val itemWidthDp = density.run { itemWidth.toDp() }
+        val itemSizeDp = density.run { itemSize.toDp() }
 
         val content: LazyListScope.() -> Unit = {
             items(
@@ -155,15 +192,15 @@ fun <T> AnimatedCircularList(
                     indexOfSelector = indexOfSelector,
                     globalIndex = globalIndex,
                     availableSpace = availableSpace,
-                    itemWidth = itemWidthDp,
+                    itemSize = itemSizeDp,
                     spaceBetweenItems = spaceBetweenItemsPx,
                     visibleItemCount = visibleItemCount,
                     totalItemCount = totalItemCount,
                     inactiveItemScale = inactiveItemScale,
                     inactiveColor = unSelectedColor,
                     activeColor = selectedColor
-                ) { animationProgress: AnimationProgress, width: Dp ->
-                    itemContent(animationProgress, globalIndex % totalItemCount, width)
+                ) { animationProgress: AnimationProgress, size: Dp ->
+                    itemContent(animationProgress, globalIndex % totalItemCount, size)
                 }
             }
         }
@@ -191,6 +228,77 @@ fun <T> AnimatedCircularList(
 }
 
 @Composable
+private fun AnimatedCircularListImpl(
+    modifier:Modifier,
+    lazyListState:LazyListState,
+    flingBehavior:FlingBehavior,
+    initialFistVisibleIndex:Int,
+    visibleItemCount:Int,
+    availableSpace:Float,
+    itemSize:Dp,
+    spaceBetweenItems:Dp,
+    argbEvaluator:ArgbEvaluator,
+    totalItemCount:Int,
+    indexOfSelector:Int,
+    activeColor:Int,
+    inactiveColor:Int,
+    inactiveItemScale:Float,
+    orientation:Orientation,
+    key: ((index: Int) -> Any)?,
+    contentType: (index: Int) -> Any?,
+    itemContent: @Composable LazyItemScope.(
+        animationProgress: AnimationProgress, index: Int, size: Dp) -> Unit
+){
+
+    val density = LocalDensity.current
+    val spaceBetweenItemsPx = density.run { spaceBetweenItems.toPx() }
+
+    val content: LazyListScope.() -> Unit = {
+        items(
+            count = Int.MAX_VALUE, key = key, contentType = contentType
+        ) { globalIndex ->
+            AnimatedItems(
+                lazyListState = lazyListState,
+                argbEvaluator = argbEvaluator,
+                initialFistVisibleIndex = initialFistVisibleIndex,
+                indexOfSelector = indexOfSelector,
+                globalIndex = globalIndex,
+                availableSpace = availableSpace,
+                itemSize = itemSize,
+                spaceBetweenItems = spaceBetweenItemsPx,
+                visibleItemCount = visibleItemCount,
+                totalItemCount = totalItemCount,
+                inactiveItemScale = inactiveItemScale,
+                inactiveColor = inactiveColor,
+                activeColor = activeColor
+            ) { animationProgress: AnimationProgress, size: Dp ->
+                itemContent(animationProgress, globalIndex % totalItemCount, size)
+            }
+        }
+    }
+
+    if (orientation == Orientation.Horizontal) {
+        LazyRow(
+            modifier = modifier,
+            state = lazyListState,
+            horizontalArrangement = Arrangement.spacedBy(spaceBetweenItems),
+            flingBehavior = flingBehavior
+        ) {
+            content()
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            state = lazyListState,
+            verticalArrangement = Arrangement.spacedBy(spaceBetweenItems),
+            flingBehavior = flingBehavior
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
 private fun LazyItemScope.AnimatedItems(
     lazyListState: LazyListState,
     argbEvaluator: ArgbEvaluator,
@@ -198,7 +306,7 @@ private fun LazyItemScope.AnimatedItems(
     indexOfSelector: Int,
     globalIndex: Int,
     availableSpace: Float,
-    itemWidth: Dp,
+    itemSize: Dp,
     spaceBetweenItems: Float,
     visibleItemCount: Int,
     totalItemCount: Int,
@@ -212,7 +320,7 @@ private fun LazyItemScope.AnimatedItems(
         mutableStateOf(-1)
     }
 
-    val itemWidthPx = LocalDensity.current.run { itemWidth.toPx() }
+    val itemSizePx = LocalDensity.current.run { itemSize.toPx() }
 
     val animationData by remember {
         derivedStateOf {
@@ -224,7 +332,7 @@ private fun LazyItemScope.AnimatedItems(
                 globalIndex = globalIndex,
                 selectedIndex = selectedIndex,
                 availableSpace = availableSpace,
-                itemSize = itemWidthPx,
+                itemSize = itemSizePx,
                 spaceBetweenItems = spaceBetweenItems,
                 visibleItemCount = visibleItemCount,
                 totalItemCount = totalItemCount,
@@ -237,7 +345,7 @@ private fun LazyItemScope.AnimatedItems(
             animationData
         }
     }
-    itemContent(animationData, itemWidth)
+    itemContent(animationData, itemSize)
 }
 
 /**
@@ -394,11 +502,11 @@ private fun getScale(
 
         // Check how far this item is to selector index.
         val distanceToSelector = (selectorPosition - itemOffset).absoluteValue
-        val scaleRegionWidth = (itemSize + spaceBetweenItems)
+        val scaleRegionSize = (itemSize + spaceBetweenItems)
 
         calculateScale(
             distanceToSelector,
-            scaleRegionWidth,
+            scaleRegionSize,
             inactiveScale
         )
     }
@@ -409,12 +517,12 @@ private fun getScale(
  */
 private fun calculateScale(
     distanceToSelector: Float,
-    scaleRegionWidth: Float,
+    scaleRegionSize: Float,
     minimum: Float
 ): Float {
-    return if (distanceToSelector < scaleRegionWidth) {
+    return if (distanceToSelector < scaleRegionSize) {
         // Now item is in scale region. Check where exactly it is in this region for animation
-        val fraction = (scaleRegionWidth - distanceToSelector) / scaleRegionWidth
+        val fraction = (scaleRegionSize - distanceToSelector) / scaleRegionSize
         // scale based on lower bound and 1f.
         // If lower bound .9f and fraction is 50% our scale is .9f + .1f*50/100 = .95f
         minimum + fraction * (1 - minimum)
