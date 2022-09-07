@@ -3,6 +3,10 @@
 Animated infinite and finite LazyRow and LazyColumn with scale and color animations on scroll change
 based on how far they are to selector items
 
+
+https://user-images.githubusercontent.com/35650605/188903459-382f80f1-b77e-427f-9a0d-d50c39dd5406.mp4
+
+
 ## AnimatedCircularList
 
 ### Declaration
