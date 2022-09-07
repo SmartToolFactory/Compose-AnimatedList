@@ -2,7 +2,6 @@
 
 package com.smarttoolfactory.animatedlist
 
-import android.animation.ArgbEvaluator
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
@@ -11,7 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,6 +49,7 @@ fun <T> AnimatedCircularList(
     inactiveItemSize: Dp,
     spaceBetweenItems: Dp = 4.dp,
     selectorIndex: Int = visibleItemCount / 2,
+    rangeOfSelection: Int = 1,
     activeColor: Color = Color.Cyan,
     inactiveColor: Color = Color.Gray,
     orientation: Orientation = Orientation.Horizontal,
@@ -75,11 +75,6 @@ fun <T> AnimatedCircularList(
         lazyListState = lazyListState
     )
 
-    val argbEvaluator = remember { ArgbEvaluator() }
-
-    val selectedColor = remember(activeColor) { activeColor.toArgb() }
-    val unSelectedColor = remember(inactiveColor) { inactiveColor.toArgb() }
-
     // Index of selector(item that is selected)  in circular list
     val indexOfSelector = selectorIndex.coerceIn(0, visibleItemCount - 1)
 
@@ -101,11 +96,11 @@ fun <T> AnimatedCircularList(
             availableSpace = availableSpace,
             itemSize = activeItemSize,
             spaceBetweenItems = spaceBetweenItems,
-            argbEvaluator = argbEvaluator,
             totalItemCount = totalItemCount,
             indexOfSelector = indexOfSelector,
-            activeColor = selectedColor,
-            inactiveColor = unSelectedColor,
+            rangeOfSelection = rangeOfSelection,
+            activeColor = activeColor,
+            inactiveColor = inactiveColor,
             inactiveItemScale = inactiveItemScale,
             orientation = orientation,
             key = key,
@@ -144,6 +139,7 @@ fun <T> AnimatedCircularList(
     visibleItemCount: Int = 5,
     spaceBetweenItems: Dp = 4.dp,
     selectorIndex: Int = visibleItemCount / 2,
+    rangeOfSelection: Int = 1,
     activeColor: Color = ActiveColor,
     inactiveColor: Color = InactiveColor,
     inactiveItemScale: Float = .85f,
@@ -158,11 +154,6 @@ fun <T> AnimatedCircularList(
     val flingBehavior = rememberSnapperFlingBehavior(
         lazyListState = lazyListState
     )
-
-    val argbEvaluator = remember { ArgbEvaluator() }
-
-    val selectedColor = remember(activeColor) { activeColor.toArgb() }
-    val unSelectedColor = remember(inactiveColor) { inactiveColor.toArgb() }
 
     // Index of selector(item that is selected)  in circular list
     val indexOfSelector = selectorIndex.coerceIn(0, visibleItemCount - 1)
@@ -198,11 +189,11 @@ fun <T> AnimatedCircularList(
             availableSpace = availableSpace,
             itemSize = itemSizeDp,
             spaceBetweenItems = spaceBetweenItems,
-            argbEvaluator = argbEvaluator,
             totalItemCount = totalItemCount,
             indexOfSelector = indexOfSelector,
-            activeColor = selectedColor,
-            inactiveColor = unSelectedColor,
+            rangeOfSelection = rangeOfSelection.coerceAtMost(visibleItemCount),
+            activeColor = activeColor,
+            inactiveColor = inactiveColor,
             inactiveItemScale = inactiveItemScale,
             orientation = orientation,
             key = key,
@@ -222,11 +213,11 @@ private fun AnimatedCircularListImpl(
     availableSpace: Float,
     itemSize: Dp,
     spaceBetweenItems: Dp,
-    argbEvaluator: ArgbEvaluator,
     totalItemCount: Int,
     indexOfSelector: Int,
-    activeColor: Int,
-    inactiveColor: Int,
+    rangeOfSelection: Int,
+    activeColor: Color,
+    inactiveColor: Color,
     inactiveItemScale: Float,
     orientation: Orientation,
     key: ((index: Int) -> Any)?,
@@ -245,9 +236,9 @@ private fun AnimatedCircularListImpl(
         ) { globalIndex ->
             AnimatedItems(
                 lazyListState = lazyListState,
-                argbEvaluator = argbEvaluator,
                 initialFistVisibleIndex = initialFistVisibleIndex,
                 indexOfSelector = indexOfSelector,
+                rangeOfSelection = rangeOfSelection,
                 globalIndex = globalIndex,
                 availableSpace = availableSpace,
                 itemSize = itemSize,
@@ -287,9 +278,9 @@ private fun AnimatedCircularListImpl(
 @Composable
 private fun LazyItemScope.AnimatedItems(
     lazyListState: LazyListState,
-    argbEvaluator: ArgbEvaluator,
     initialFistVisibleIndex: Int,
     indexOfSelector: Int,
+    rangeOfSelection: Int,
     globalIndex: Int,
     availableSpace: Float,
     itemSize: Dp,
@@ -297,8 +288,8 @@ private fun LazyItemScope.AnimatedItems(
     visibleItemCount: Int,
     totalItemCount: Int,
     inactiveItemScale: Float,
-    inactiveColor: Int,
-    activeColor: Int,
+    inactiveColor: Color,
+    activeColor: Color,
     itemContent: @Composable LazyItemScope.(animationProgress: AnimationProgress, size: Dp) -> Unit
 
 ) {
@@ -312,9 +303,9 @@ private fun LazyItemScope.AnimatedItems(
         derivedStateOf {
             val animationData = getAnimationProgress(
                 lazyListState = lazyListState,
-                argbEvaluator = argbEvaluator,
                 initialFistVisibleIndex = initialFistVisibleIndex,
                 indexOfSelector = indexOfSelector,
+                rangeOfSelection = rangeOfSelection,
                 globalIndex = globalIndex,
                 selectedIndex = selectedIndex,
                 availableSpace = availableSpace,
@@ -339,8 +330,6 @@ private fun LazyItemScope.AnimatedItems(
  * [Int.MAX_VALUE] global index count
  *
  * @param lazyListState A state object that can be hoisted to control and observe scrolling
- * @param argbEvaluator evaluator can be used to perform type interpolation between
- * integer values that represent ARGB colors
  * @param initialFistVisibleIndex index of item that is at the beginning of the list initially
  * @param indexOfSelector global index of element of selector of infinite items. Item with
  * this index is selected item
@@ -360,9 +349,9 @@ private fun LazyItemScope.AnimatedItems(
  */
 private fun getAnimationProgress(
     lazyListState: LazyListState,
-    argbEvaluator: ArgbEvaluator,
     initialFistVisibleIndex: Int,
     indexOfSelector: Int,
+    rangeOfSelection: Int,
     globalIndex: Int,
     selectedIndex: Int,
     availableSpace: Float,
@@ -371,8 +360,8 @@ private fun getAnimationProgress(
     visibleItemCount: Int,
     totalItemCount: Int,
     inactiveScale: Float,
-    inactiveColor: Int,
-    activeColor: Int,
+    inactiveColor: Color,
+    activeColor: Color,
 ): AnimationProgress {
 
     val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
@@ -396,12 +385,14 @@ private fun getAnimationProgress(
         selectedIndex = selectedIndex,
         globalIndex = globalIndex,
         initialFistVisibleIndex = initialFistVisibleIndex,
+        visibleItemCount = visibleItemCount,
         indexOfSelector = indexOfSelector,
+        rangeOfSelection = rangeOfSelection,
+        selectorPosition = selectorPosition,
+        itemOffset = itemOffset,
         inactiveScale = inactiveScale,
         itemSize = itemSize,
-        spaceBetweenItems = spaceBetweenItems,
-        selectorPosition = selectorPosition,
-        itemOffset = itemOffset
+        spaceBetweenItems = spaceBetweenItems
     )
 
     // This is the fraction between lower bound and 1f. If lower bound is .9f we have
@@ -433,14 +424,11 @@ private fun getAnimationProgress(
         indexOfSelector
     }
 
-
-    val color: Int = argbEvaluator.evaluate(
-        colorScale, inactiveColor, activeColor
-    ) as Int
+    val color = lerp(inactiveColor,activeColor ,colorScale)
 
     return AnimationProgress(
         scale = scale,
-        color = Color(color),
+        color = color,
         itemOffset = itemOffset,
         itemFraction = itemOffset / availableSpace,
         globalItemIndex = globalSelectedIndex,
@@ -470,13 +458,16 @@ private fun getScale(
     selectedIndex: Int,
     globalIndex: Int,
     initialFistVisibleIndex: Int,
+    visibleItemCount:Int,
     indexOfSelector: Int,
+    rangeOfSelection:Int,
+    selectorPosition: Float,
+    itemOffset: Int,
     inactiveScale: Float,
     itemSize: Float,
     spaceBetweenItems: Float,
-    selectorPosition: Float,
-    itemOffset: Int
 ): Float {
+
     // Current item is not close to center item or one half of left or right / item
     // visible items are not initialized and it's selector index
     return if (selectedIndex == -1 && globalIndex == initialFistVisibleIndex + indexOfSelector) {
