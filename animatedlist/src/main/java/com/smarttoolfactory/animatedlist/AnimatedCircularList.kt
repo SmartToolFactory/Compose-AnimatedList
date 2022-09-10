@@ -2,6 +2,7 @@
 
 package com.smarttoolfactory.animatedlist
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
@@ -25,7 +26,15 @@ import kotlin.math.absoluteValue
  *
  * @param items the data list
  * @param visibleItemCount count of items that are visible at any time
+ * @param activeItemSize width or height of selected item
+ * @param inactiveItemSize width or height of unselected items
  * @param spaceBetweenItems padding between 2 items
+ * @param selectorIndex index of selector. When [itemScaleRange] is odd number it's center of
+ * selected item, when [itemScaleRange] is even number it's center of item with selecter index
+ * and the one next to it
+ * @param itemScaleRange range of area of scaling. When this value is odd
+ * any item that enters half of item size range subject to  being scaled. When this value is even
+ * any item in 2 item size range is subject to being scaled
  * @param activeColor color of selected item
  * @param inactiveColor color of items are not selected
  * @param key a factory of stable and unique keys representing the item. Using the same key
@@ -50,7 +59,7 @@ fun <T> AnimatedCircularList(
     inactiveItemSize: Dp,
     spaceBetweenItems: Dp = 4.dp,
     selectorIndex: Int = visibleItemCount / 2,
-    rangeOfSelection: Int = 1,
+    itemScaleRange: Int = 1,
     activeColor: Color = Color.Cyan,
     inactiveColor: Color = Color.Gray,
     orientation: Orientation = Orientation.Horizontal,
@@ -69,11 +78,13 @@ fun <T> AnimatedCircularList(
         Modifier.width(listDimension)
     } else {
         Modifier.height(listDimension)
-
     }
 
+    val visibleItemCountMod = visibleItemCount % 2 == 1
+
     val flingBehavior = rememberSnapperFlingBehavior(
-        lazyListState = lazyListState
+        lazyListState = lazyListState,
+        snapOffsetForItem = if (visibleItemCountMod) SnapOffsets.Center else SnapOffsets.Start
     )
 
     // Index of selector(item that is selected)  in circular list
@@ -99,10 +110,10 @@ fun <T> AnimatedCircularList(
             spaceBetweenItems = spaceBetweenItems,
             totalItemCount = totalItemCount,
             indexOfSelector = indexOfSelector,
-            rangeOfSelection = rangeOfSelection,
+            rangeOfSelection = itemScaleRange,
             activeColor = activeColor,
             inactiveColor = inactiveColor,
-            inactiveItemScale = inactiveItemScale,
+            inactiveItemFraction = inactiveItemScale,
             orientation = orientation,
             key = key,
             contentType = contentType,
@@ -116,7 +127,15 @@ fun <T> AnimatedCircularList(
  *
  * @param items the data list
  * @param visibleItemCount count of items that are visible at any time
+ * @param inactiveItemPercent percentage of scale that items inside [itemScaleRange]
+ * can be scaled down to. This is a number between 0 and 100
  * @param spaceBetweenItems padding between 2 items
+ * @param selectorIndex index of selector. When [itemScaleRange] is odd number it's center of
+ * selected item, when [itemScaleRange] is even number it's center of item with selecter index
+ * and the one next to it
+ * @param itemScaleRange range of area of scaling. When this value is odd
+ * any item that enters half of item size range subject to  being scaled. When this value is even
+ * any item in 2 item size range is subject to being scaled
  * @param activeColor color of selected item
  * @param inactiveColor color of items are not selected
  * @param key a factory of stable and unique keys representing the item. Using the same key
@@ -138,12 +157,12 @@ fun <T> AnimatedCircularList(
     initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
     lazyListState: LazyListState = rememberLazyListState(initialFistVisibleIndex),
     visibleItemCount: Int = 5,
+    inactiveItemPercent: Int = 85,
     spaceBetweenItems: Dp = 4.dp,
     selectorIndex: Int = visibleItemCount / 2,
-    rangeOfSelection: Int = 1,
+    itemScaleRange: Int = 1,
     activeColor: Color = ActiveColor,
     inactiveColor: Color = InactiveColor,
-    inactiveItemScale: Float = .85f,
     orientation: Orientation = Orientation.Horizontal,
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
@@ -152,9 +171,11 @@ fun <T> AnimatedCircularList(
     ) -> Unit
 ) {
 
+    val visibleItemCountMod = visibleItemCount % 2 == 1
+
     val flingBehavior = rememberSnapperFlingBehavior(
         lazyListState = lazyListState,
-        snapOffsetForItem = SnapOffsets.Center
+        snapOffsetForItem = if (visibleItemCountMod) SnapOffsets.Center else SnapOffsets.Start
     )
 
     // Index of selector(item that is selected)  in circular list
@@ -167,7 +188,7 @@ fun <T> AnimatedCircularList(
         modifier.fillMaxWidth()
     } else {
         modifier.fillMaxHeight()
-    }
+    }.border(1.dp, Color.Green)
 
     BoxWithConstraints(modifier = listModifier) {
 
@@ -193,10 +214,10 @@ fun <T> AnimatedCircularList(
             spaceBetweenItems = spaceBetweenItems,
             totalItemCount = totalItemCount,
             indexOfSelector = indexOfSelector,
-            rangeOfSelection = rangeOfSelection.coerceAtMost(visibleItemCount),
+            rangeOfSelection = itemScaleRange.coerceAtMost(visibleItemCount),
             activeColor = activeColor,
             inactiveColor = inactiveColor,
-            inactiveItemScale = inactiveItemScale,
+            inactiveItemFraction = inactiveItemPercent.coerceIn(0, 100) / 100f,
             orientation = orientation,
             key = key,
             contentType = contentType,
@@ -220,7 +241,7 @@ private fun AnimatedCircularListImpl(
     rangeOfSelection: Int,
     activeColor: Color,
     inactiveColor: Color,
-    inactiveItemScale: Float,
+    inactiveItemFraction: Float,
     orientation: Orientation,
     key: ((index: Int) -> Any)?,
     contentType: (index: Int) -> Any?,
@@ -247,7 +268,7 @@ private fun AnimatedCircularListImpl(
                 spaceBetweenItems = spaceBetweenItemsPx,
                 visibleItemCount = visibleItemCount,
                 totalItemCount = totalItemCount,
-                inactiveItemScale = inactiveItemScale,
+                inactiveItemScale = inactiveItemFraction,
                 inactiveColor = inactiveColor,
                 activeColor = activeColor
             ) { animationProgress: AnimationProgress, size: Dp ->
@@ -307,7 +328,7 @@ private fun LazyItemScope.AnimatedItems(
                 lazyListState = lazyListState,
                 initialFistVisibleIndex = initialFistVisibleIndex,
                 indexOfSelector = indexOfSelector,
-                rangeOfSelection = rangeOfSelection,
+                itemScaleRange = rangeOfSelection,
                 globalIndex = globalIndex,
                 selectedIndex = selectedIndex,
                 availableSpace = availableSpace,
@@ -353,7 +374,7 @@ private fun getAnimationProgress(
     lazyListState: LazyListState,
     initialFistVisibleIndex: Int,
     indexOfSelector: Int,
-    rangeOfSelection: Int,
+    itemScaleRange: Int,
     globalIndex: Int,
     selectedIndex: Int,
     availableSpace: Float,
@@ -369,9 +390,17 @@ private fun getAnimationProgress(
     val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
     val currentItem: LazyListItemInfo? = visibleItems.firstOrNull { it.index == globalIndex }
 
+    val isRangeOfSelectionOdd = itemScaleRange % 2 == 1
+
     // Position of center of selector item
     // Item that is closest to this position is returned as selected item
-    val selectorPosition = (indexOfSelector) * (itemSize + spaceBetweenItems) + itemSize / 2
+    val selectorPosition = if (isRangeOfSelectionOdd) {
+        (indexOfSelector) * (itemSize + spaceBetweenItems) + itemSize / 2
+    } else {
+        // When items that can be scaled is even number selector position is
+        // space between index of selector and next item
+        (indexOfSelector) * (itemSize + spaceBetweenItems) + itemSize + spaceBetweenItems / 2
+    }
 
     // Get offset of each item relative to start of list x=0 or y=0 position
     val itemCenter = (itemSize / 2).toInt() + if (currentItem != null) {
@@ -386,7 +415,7 @@ private fun getAnimationProgress(
 
     // get scale of current item based on distance between items center to selector
     val scale = getScale(
-        rangeOfSelection = rangeOfSelection,
+        rangeOfSelection = itemScaleRange,
         selectorPosition = selectorPosition,
         itemCenter = itemCenter,
         inactiveScale = inactiveScale,
@@ -463,6 +492,15 @@ private fun getScale(
     // half space + (item width or height) + half space
     val scaleRegionSize = (itemSize + spaceBetweenItems) * (rangeOfSelection + 1) / 2
 
+    println(
+        "🔥rangeOfSelection: ${rangeOfSelection}, " +
+
+                "selectorPosition: ${selectorPosition}, " +
+                "itemOffset: ${itemCenter}, " +
+                "distanceToSelector: ${distanceToSelector}, " +
+                "scaleRegionSize: ${scaleRegionSize}"
+    )
+
     return calculateScale(
         distanceToSelector,
         scaleRegionSize,
@@ -482,6 +520,12 @@ private fun calculateScale(
 
         // item is in scale region. Check where exactly it is in this region
         val fraction = (scaleRegionSize - distanceToSelector) / scaleRegionSize
+        println(
+            "😜 calculateScale() " +
+                    "scaleRegionSize: $scaleRegionSize, " +
+                    "distanceToSelector: $distanceToSelector, " +
+                    "fraction: $fraction"
+        )
 
         // scale fraction between start and 1f.
         // If start is .9f and fraction is 50% our scale is .9f + .1f*50/100 = .95f
