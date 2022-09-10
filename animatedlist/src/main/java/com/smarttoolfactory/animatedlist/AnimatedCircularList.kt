@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.smarttoolfactory.animatedlist.model.AnimationProgress
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
+import dev.chrisbanes.snapper.SnapOffsets
 import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
 import kotlin.math.absoluteValue
 
@@ -152,7 +153,8 @@ fun <T> AnimatedCircularList(
 ) {
 
     val flingBehavior = rememberSnapperFlingBehavior(
-        lazyListState = lazyListState
+        lazyListState = lazyListState,
+        snapOffsetForItem = SnapOffsets.Center
     )
 
     // Index of selector(item that is selected)  in circular list
@@ -367,36 +369,33 @@ private fun getAnimationProgress(
     val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
     val currentItem: LazyListItemInfo? = visibleItems.firstOrNull { it.index == globalIndex }
 
-    // Position of left of selector item
-    // Selector is item that is considered as selected
-    val selectorPosition = indexOfSelector * (itemSize + spaceBetweenItems)
+    // Position of center of selector item
+    // Item that is closest to this position is returned as selected item
+    val selectorPosition = (indexOfSelector) * (itemSize + spaceBetweenItems) + itemSize / 2
 
-    // Convert global indexes to indexes in range of 0..visibleItemCount
-    val localIndex = (globalIndex + visibleItemCount / 2) % visibleItemCount
+    // Get offset of each item relative to start of list x=0 or y=0 position
+    val itemCenter = (itemSize / 2).toInt() + if (currentItem != null) {
+        currentItem.offset
+    } else {
+        // Convert global indexes to indexes in range of 0..visibleItemCount
+        // when current item is null in initial run
+        val localIndex =
+            (visibleItemCount + globalIndex - initialFistVisibleIndex) % visibleItemCount
+        (localIndex * itemSize + localIndex * spaceBetweenItems).toInt()
+    }
 
-    // Get offset of each item relative to start of list x=0 position
-    val itemOffset =
-        currentItem?.offset
-            ?: (localIndex * itemSize + localIndex * spaceBetweenItems).toInt()
-
-    // Current item is not close to center item or one half of left or right
-    // item
+    // get scale of current item based on distance between items center to selector
     val scale = getScale(
-        selectedIndex = selectedIndex,
-        globalIndex = globalIndex,
-        initialFistVisibleIndex = initialFistVisibleIndex,
-        visibleItemCount = visibleItemCount,
-        indexOfSelector = indexOfSelector,
         rangeOfSelection = rangeOfSelection,
         selectorPosition = selectorPosition,
-        itemOffset = itemOffset,
+        itemCenter = itemCenter,
         inactiveScale = inactiveScale,
         itemSize = itemSize,
         spaceBetweenItems = spaceBetweenItems
     )
 
     // This is the fraction between lower bound and 1f. If lower bound is .9f we have
-    // range of .9f..1f for scale calculation
+    // range of 0.9f..1f for scale calculation
     val scalingInterval = 1f - inactiveScale
 
     // Scale for color when scale is at lower bound color scale is zero
@@ -409,14 +408,14 @@ private fun getAnimationProgress(
     var globalSelectedIndex = selectedIndex
 
     visibleItems.forEach {
-        val itemDistanceToSelector = (it.offset - selectorPosition - itemSize / 2).absoluteValue
+        val itemDistanceToSelector = ((it.offset + itemSize / 2) - selectorPosition).absoluteValue
         if (itemDistanceToSelector < distance) {
             distance = itemDistanceToSelector.toInt()
             globalSelectedIndex = it.index
         }
     }
 
-    // Index of item in list. If list has 7 item. initially we item index is 3
+    // Index of item in list. If list has 7 items initial item index is 3
     // When selector changes we get what it(in infinite list) corresponds to in item list
     val itemIndex = if (globalSelectedIndex > 0) {
         globalSelectedIndex % totalItemCount
@@ -424,13 +423,14 @@ private fun getAnimationProgress(
         indexOfSelector
     }
 
-    val color = lerp(inactiveColor,activeColor ,colorScale)
+    // Interpolate color between start and end color based on color scale
+    val color = lerp(inactiveColor, activeColor, colorScale)
 
     return AnimationProgress(
         scale = scale,
         color = color,
-        itemOffset = itemOffset,
-        itemFraction = itemOffset / availableSpace,
+        itemOffset = itemCenter,
+        itemFraction = itemCenter / availableSpace,
         globalItemIndex = globalSelectedIndex,
         itemIndex = itemIndex
     )
@@ -441,56 +441,37 @@ private fun getAnimationProgress(
  * [LazyListState]'S [LazyListLayoutInfo.visibleItemsInfo]  list is empty,
  * or current scroll state of list.
  *
- * @param selectedIndex global index of currently selected item. This index changes only
- * when selected item is changed due to scroll
- * @param globalIndex index of current item. This index changes for every item in list
- * that calls this function
- * @param initialFistVisibleIndex index of item that is at the beginning of the list initially
- * @param indexOfSelector global index of element of selector of infinite items. Item with
- * this index is selected item
  * @param inactiveScale lower scale that items can be scaled to. It should be less than 1f
  * @param itemSize width/height of each item
  * @param spaceBetweenItems space between each item
  * @param selectorPosition position of selector or selected item
- * @param itemOffset offset of item from start of the list's x or y zero position
+ * @param itemCenter offset of item from start of the list's x or y zero position
  */
 private fun getScale(
-    selectedIndex: Int,
-    globalIndex: Int,
-    initialFistVisibleIndex: Int,
-    visibleItemCount:Int,
-    indexOfSelector: Int,
-    rangeOfSelection:Int,
+    rangeOfSelection: Int,
     selectorPosition: Float,
-    itemOffset: Int,
+    itemCenter: Int,
     inactiveScale: Float,
     itemSize: Float,
     spaceBetweenItems: Float,
 ): Float {
 
-    // Current item is not close to center item or one half of left or right / item
-    // visible items are not initialized and it's selector index
-    return if (selectedIndex == -1 && globalIndex == initialFistVisibleIndex + indexOfSelector) {
-        1f
-        // visible items are not initialized and any item other than selector
-    } else if (selectedIndex == -1) {
+    // Check how far this item is to selector index.
+    val distanceToSelector = (selectorPosition - itemCenter).absoluteValue
+    // When offset of an item is in this region it gets scaled.
+    // region size is calculated as
+    // half space + (item width or height) + half space
+    val scaleRegionSize = (itemSize + spaceBetweenItems) * (rangeOfSelection + 1) / 2
+
+    return calculateScale(
+        distanceToSelector,
+        scaleRegionSize,
         inactiveScale
-    } else {
-
-        // Check how far this item is to selector index.
-        val distanceToSelector = (selectorPosition - itemOffset).absoluteValue
-        val scaleRegionSize = (itemSize + spaceBetweenItems)
-
-        calculateScale(
-            distanceToSelector,
-            scaleRegionSize,
-            inactiveScale
-        )
-    }
+    )
 }
 
 /**
- * Calculate scale that is inside scale region based on [minimum]
+ * Calculate scale that is inside scale region based on [minimum]..1f range
  */
 private fun calculateScale(
     distanceToSelector: Float,
@@ -498,13 +479,27 @@ private fun calculateScale(
     minimum: Float
 ): Float {
     return if (distanceToSelector < scaleRegionSize) {
-        // Now item is in scale region. Check where exactly it is in this region for animation
+
+        // item is in scale region. Check where exactly it is in this region
         val fraction = (scaleRegionSize - distanceToSelector) / scaleRegionSize
-        // scale based on lower bound and 1f.
-        // If lower bound .9f and fraction is 50% our scale is .9f + .1f*50/100 = .95f
-        minimum + fraction * (1 - minimum)
+
+        // scale fraction between start and 1f.
+        // If start is .9f and fraction is 50% our scale is .9f + .1f*50/100 = .95f
+        lerp(start = minimum, stop = 1f, fraction = fraction)
     } else {
         minimum
 
     }.coerceIn(minimum, 1f)
 }
+
+/**
+ * [Linear Interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) function that moves
+ * amount from it's current position to start and amount
+ * @param start of interval
+ * @param stop of interval
+ * @param fraction closed unit interval [0f, 1f]
+ */
+private fun lerp(start: Float, stop: Float, fraction: Float): Float {
+    return (1 - fraction) * start + fraction * stop
+}
+
