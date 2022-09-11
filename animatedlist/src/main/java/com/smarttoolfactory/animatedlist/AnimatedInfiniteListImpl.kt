@@ -48,7 +48,7 @@ import kotlin.math.absoluteValue
  * @param itemContent the content displayed by a single item
  */
 @Composable
-fun <T> AnimatedCircularList(
+internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
     items: List<T>,
     initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
@@ -60,13 +60,13 @@ fun <T> AnimatedCircularList(
     selectorIndex: Int = -1,
     itemScaleRange: Int = 1,
     showPartialItem: Boolean = false,
-    activeColor: Color = Color.Cyan,
-    inactiveColor: Color = Color.Gray,
+    activeColor: Color = ActiveColor,
+    inactiveColor: Color = InactiveColor,
     orientation: Orientation = Orientation.Horizontal,
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp
+        animationProgress: AnimationProgress, index: Int, item: T, size: Dp
     ) -> Unit
 ) {
     val inactiveItemScale = inactiveItemSize.value / activeItemSize.value
@@ -85,10 +85,6 @@ fun <T> AnimatedCircularList(
     // Index of selector(item that is selected)  in circular list
     val indexOfSelector = (if (selectorIndex == -1) {
         if (oddNumberOfVisibleItems && !showPartialItem) {
-            visibleItemCount / 2
-        } else if (oddNumberOfVisibleItems && showPartialItem) {
-            visibleItemCount / 2 - 1
-        } else if (!showPartialItem) {
             visibleItemCount / 2
         } else {
             visibleItemCount / 2 - 1
@@ -129,6 +125,7 @@ fun <T> AnimatedCircularList(
     ) {
         AnimatedCircularListImpl(
             modifier = listModifier,
+            items = items,
             lazyListState = lazyListState,
             flingBehavior = flingBehavior,
             initialFistVisibleIndex = initialFistVisibleIndex,
@@ -152,7 +149,7 @@ fun <T> AnimatedCircularList(
 }
 
 /**
- *  Infinite list with color and scale animation for selecting aspect ratio
+ *  Infinite list with color and scale animation
  *
  * @param items the data list
  * @param visibleItemCount count of items that are visible at any time
@@ -181,7 +178,7 @@ fun <T> AnimatedCircularList(
  */
 @OptIn(ExperimentalSnapperApi::class)
 @Composable
-fun <T> AnimatedCircularList(
+internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
     items: List<T>,
     initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
@@ -197,30 +194,9 @@ fun <T> AnimatedCircularList(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp
+        animationProgress: AnimationProgress, index: Int, item: T, size: Dp
     ) -> Unit
 ) {
-
-    // number of items
-    val totalItemCount = items.size
-
-    // Number of items that are visible
-    val oddNumberOfVisibleItems = visibleItemCount % 2 == 1
-
-    // Index of selector(item that is selected)  in circular list
-    val indexOfSelector = (if (selectorIndex == -1) {
-        if (oddNumberOfVisibleItems && !showPartialItem) {
-            visibleItemCount / 2
-        } else if (oddNumberOfVisibleItems && showPartialItem) {
-            visibleItemCount / 2 - 1
-        } else if (!showPartialItem) {
-            visibleItemCount / 2
-        } else {
-            visibleItemCount / 2 - 1
-        }
-    } else selectorIndex)
-        .coerceIn(0, visibleItemCount - 1)
-
 
     val listModifier = if (orientation == Orientation.Horizontal) {
         modifier.fillMaxWidth()
@@ -241,11 +217,21 @@ fun <T> AnimatedCircularList(
             (availableSpace - spaceBetweenItemsPx * (visibleItemCount - 1)) / visibleItemCount
         val itemSizeDp = density.run { itemSize.toDp() }
 
+        // number of items
+        val totalItemCount = items.size
 
-        val listState = rememberLazyListState(
-            initialFirstVisibleItemIndex = initialFistVisibleIndex,
-            initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
-        )
+        // Number of items that are visible
+        val oddNumberOfVisibleItems = visibleItemCount % 2 == 1
+
+        // Index of selector(item that is selected)  in circular list
+        val indexOfSelector = (if (selectorIndex == -1) {
+            if (oddNumberOfVisibleItems && !showPartialItem) {
+                visibleItemCount / 2
+            } else {
+                visibleItemCount / 2 - 1
+            }
+        } else selectorIndex)
+            .coerceIn(0, visibleItemCount - 1)
 
         val snapOffsetForItem = if (oddNumberOfVisibleItems && showPartialItem) {
             { _: SnapperLayoutInfo, _: SnapperLayoutItemInfo ->
@@ -257,6 +243,11 @@ fun <T> AnimatedCircularList(
             SnapOffsets.Center
         }
 
+        val listState = rememberLazyListState(
+            initialFirstVisibleItemIndex = initialFistVisibleIndex,
+            initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
+        )
+
         val flingBehavior = rememberSnapperFlingBehavior(
             lazyListState = listState,
             snapOffsetForItem = snapOffsetForItem
@@ -264,6 +255,7 @@ fun <T> AnimatedCircularList(
 
         AnimatedCircularListImpl(
             modifier = listModifier,
+            items = items,
             lazyListState = listState,
             flingBehavior = flingBehavior,
             initialFistVisibleIndex = initialFistVisibleIndex,
@@ -287,8 +279,9 @@ fun <T> AnimatedCircularList(
 }
 
 @Composable
-private fun AnimatedCircularListImpl(
+private fun <T> AnimatedCircularListImpl(
     modifier: Modifier,
+    items: List<T>,
     lazyListState: LazyListState,
     flingBehavior: FlingBehavior,
     initialFistVisibleIndex: Int,
@@ -307,7 +300,7 @@ private fun AnimatedCircularListImpl(
     key: ((index: Int) -> Any)?,
     contentType: (index: Int) -> Any?,
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, size: Dp
+        animationProgress: AnimationProgress, index: Int, item: T, size: Dp
     ) -> Unit
 ) {
 
@@ -334,7 +327,8 @@ private fun AnimatedCircularListImpl(
                 inactiveColor = inactiveColor,
                 activeColor = activeColor
             ) { animationProgress: AnimationProgress, size: Dp ->
-                itemContent(animationProgress, globalIndex % totalItemCount, size)
+                val localIndex = globalIndex % totalItemCount
+                itemContent(animationProgress, localIndex, items[localIndex], size)
             }
         }
     }
@@ -549,10 +543,10 @@ private fun getIndexClosestToSelector(
  *  Get position of selector item
  *  ```
  *  3 item range of selection <> = item, -- space between items
- * SELECTOR
+ *     SELECTOR
  * --<>--<|>--<>
  * 4 item range of selection
- * SELECTOR
+ *       SELECTOR
  * --<>--<>-|-<>--<>--
  *  ```
  */
@@ -629,15 +623,4 @@ private fun calculateScale(
         minimum
 
     }.coerceIn(minimum, 1f)
-}
-
-/**
- * [Linear Interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) function that moves
- * amount from it's current position to start and amount
- * @param start of interval
- * @param stop of interval
- * @param fraction closed unit interval [0f, 1f]
- */
-private fun lerp(start: Float, stop: Float, fraction: Float): Float {
-    return (1 - fraction) * start + fraction * stop
 }
