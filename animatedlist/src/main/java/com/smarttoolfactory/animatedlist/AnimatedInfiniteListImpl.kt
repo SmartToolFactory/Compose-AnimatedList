@@ -2,7 +2,6 @@
 
 package com.smarttoolfactory.animatedlist
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.*
@@ -52,7 +51,6 @@ internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
     items: List<T>,
     initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
-    lazyListState: LazyListState = rememberLazyListState(initialFistVisibleIndex),
     visibleItemCount: Int = 5,
     activeItemSize: Dp,
     inactiveItemSize: Dp,
@@ -80,6 +78,14 @@ internal fun <T> AnimatedInfiniteList(
         Modifier.height(listDimension)
     }
 
+    val availableSpace = LocalDensity.current.run { listDimension.toPx() }
+
+    val itemSize = LocalDensity.current.run { activeItemSize.toPx() }
+
+    // number of items
+    val totalItemCount = items.size
+
+    // Number of items that are visible
     val oddNumberOfVisibleItems = visibleItemCount % 2 == 1
 
     // Index of selector(item that is selected)  in circular list
@@ -92,18 +98,6 @@ internal fun <T> AnimatedInfiniteList(
     } else selectorIndex)
         .coerceIn(0, visibleItemCount - 1)
 
-    // number of items
-    val totalItemCount = items.size
-
-    val availableSpace = LocalDensity.current.run { listDimension.toPx() }
-
-    val itemSize = LocalDensity.current.run { activeItemSize.toPx() }
-
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialFistVisibleIndex,
-        initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
-    )
-
     val snapOffsetForItem = if (oddNumberOfVisibleItems && showPartialItem) {
         { _: SnapperLayoutInfo, _: SnapperLayoutItemInfo ->
             (itemSize / 2).toInt()
@@ -113,6 +107,11 @@ internal fun <T> AnimatedInfiniteList(
     } else {
         SnapOffsets.Center
     }
+
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = initialFistVisibleIndex,
+        initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
+    )
 
     val flingBehavior = rememberSnapperFlingBehavior(
         lazyListState = listState,
@@ -126,7 +125,7 @@ internal fun <T> AnimatedInfiniteList(
         AnimatedCircularListImpl(
             modifier = listModifier,
             items = items,
-            lazyListState = lazyListState,
+            lazyListState = listState,
             flingBehavior = flingBehavior,
             initialFistVisibleIndex = initialFistVisibleIndex,
             visibleItemCount = visibleItemCount,
@@ -202,7 +201,7 @@ internal fun <T> AnimatedInfiniteList(
         modifier.fillMaxWidth()
     } else {
         modifier.fillMaxHeight()
-    }.border(1.dp, Color.Green)
+    }
 
     BoxWithConstraints(modifier = listModifier) {
 
