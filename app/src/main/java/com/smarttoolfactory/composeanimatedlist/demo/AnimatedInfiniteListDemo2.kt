@@ -1,6 +1,7 @@
 package com.smarttoolfactory.composeanimatedlist.demo
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -143,7 +144,10 @@ fun AnimatedInfiniteListDemo2() {
         Spacer(modifier = Modifier.height(30.dp))
 
         AnimatedInfiniteLazyRow(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth()
+                .border(1.dp,Color.Green),
             items = aspectRatios,
             visibleItemCount = visibleIteCount.toInt(),
             selectorIndex = selectorIndex.toInt(),

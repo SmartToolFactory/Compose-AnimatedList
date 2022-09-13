@@ -22,7 +22,6 @@ import com.smarttoolfactory.composeanimatedlist.ShapeSelection
 import com.smarttoolfactory.composeanimatedlist.SnackCard
 import com.smarttoolfactory.composeanimatedlist.aspectRatios
 import com.smarttoolfactory.composeanimatedlist.snacks
-import kotlin.math.absoluteValue
 
 
 @Composable
@@ -40,11 +39,9 @@ fun AnimatedInfiniteListDemo() {
 
         // Demonstrating for setting first visible item of list if we want to
         // make last second item from the end and last item as initial selected item
-        val initialVisibleItem = -2
+        val initialVisibleItem = 0
         val visibleItemCount = 5
-        val initialSelectedItem =
-            (aspectRatios.size-1 + initialVisibleItem + visibleItemCount / 2)
-                .absoluteValue % aspectRatios.size
+        val initialSelectedItem = 2
 
         var selectedItem by remember {
             mutableStateOf(initialSelectedItem)
