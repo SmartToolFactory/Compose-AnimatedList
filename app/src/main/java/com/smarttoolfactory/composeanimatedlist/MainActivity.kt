@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalSnapperApi::class, ExperimentalPagerApi::class)
+@file:OptIn(ExperimentalPagerApi::class)
 
 package com.smarttoolfactory.composeanimatedlist
 
@@ -17,7 +17,6 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.smarttoolfactory.composeanimatedlist.demo.AnimatedInfiniteListDemo
 import com.smarttoolfactory.composeanimatedlist.demo.AnimatedInfiniteListDemo2
 import com.smarttoolfactory.composeanimatedlist.ui.theme.ComposeAnimatedListTheme
-import dev.chrisbanes.snapper.ExperimentalSnapperApi
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

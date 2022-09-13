@@ -22,28 +22,39 @@ import com.smarttoolfactory.composeanimatedlist.ShapeSelection
 import com.smarttoolfactory.composeanimatedlist.SnackCard
 import com.smarttoolfactory.composeanimatedlist.aspectRatios
 import com.smarttoolfactory.composeanimatedlist.snacks
+import kotlin.math.absoluteValue
 
 
 @Composable
 fun AnimatedInfiniteListDemo() {
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.DarkGray),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.DarkGray),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(40.dp))
 
-
-        var selectedItem by remember {
-            mutableStateOf(aspectRatios.size / 2)
-        }
-
         val listWidth = LocalDensity.current.run { 1000.toDp() }
         val spaceBetweenItems = LocalDensity.current.run { 30.toDp() }
+
+        // Demonstrating for setting first visible item of list if we want to
+        // make last second item from the end and last item as initial selected item
+        val initialVisibleItem = -2
+        val visibleItemCount = 5
+        val initialSelectedItem =
+            (aspectRatios.size-1 + initialVisibleItem + visibleItemCount / 2)
+                .absoluteValue % aspectRatios.size
+
+        var selectedItem by remember {
+            mutableStateOf(initialSelectedItem)
+        }
 
         AnimatedInfiniteLazyRow(
             modifier = Modifier.width(listWidth),
             items = aspectRatios,
-            visibleItemCount = 5,
+            visibleItemCount = visibleItemCount,
+            initialFirstVisibleIndex = initialVisibleItem,
             inactiveColor = InactiveColor,
             activeColor = ActiveColor,
             itemContent = { animationProgress, index, item, width ->
@@ -72,7 +83,6 @@ fun AnimatedInfiniteListDemo() {
         )
 
         Spacer(modifier = Modifier.height(20.dp))
-
 
         AnimatedInfiniteLazyRow(
             modifier = Modifier
