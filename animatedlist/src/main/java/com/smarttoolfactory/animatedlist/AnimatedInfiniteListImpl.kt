@@ -182,7 +182,6 @@ internal fun <T> AnimatedInfiniteList(
  * type will be considered compatible.
  * @param itemContent the content displayed by a single item
  */
-@OptIn(ExperimentalSnapperApi::class)
 @Composable
 internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
@@ -210,76 +209,40 @@ internal fun <T> AnimatedInfiniteList(
         modifier.fillMaxHeight()
     }
 
-    BoxWithConstraints(modifier = listModifier) {
+    ListSizeSubcomposeLayout(
+        modifier = listModifier,
+        mainContent = {
+            Box(modifier = listModifier)
+        }
+    ) {
+        val width = it.width
+        val height = it.height
 
-        val availableSpace =
-            if (orientation == Orientation.Horizontal) constraints.maxWidth.toFloat() else
-                constraints.maxHeight.toFloat()
-
+        val availableSpace = if (orientation == Orientation.Horizontal) width else height
         val density = LocalDensity.current
         val spaceBetweenItemsPx = density.run { spaceBetweenItems.toPx() }
 
         val itemSize =
             (availableSpace - spaceBetweenItemsPx * (visibleItemCount - 1)) / visibleItemCount
         val itemSizeDp = density.run { itemSize.toDp() }
+        val inActiveItemSizeDp = density.run { (itemSize * inactiveItemPercent / 100).toDp() }
+        val widthDp = density.run { width.toDp() }
+        val heightDp = density.run { height.toDp() }
 
-        // number of items
-        val totalItemCount = items.size
-
-        // Number of items that are visible
-        val oddNumberOfVisibleItems = visibleItemCount % 2 == 1
-
-        // Index of selector(item that is selected)  in circular list
-        val indexOfSelector = (if (selectorIndex == -1) {
-            if (oddNumberOfVisibleItems && !showPartialItem) {
-                visibleItemCount / 2
-            } else {
-                visibleItemCount / 2 - 1
-            }
-        } else selectorIndex)
-            .coerceIn(0, visibleItemCount - 1)
-
-        val snapOffsetForItem = if (oddNumberOfVisibleItems && showPartialItem) {
-            { _: SnapperLayoutInfo, _: SnapperLayoutItemInfo ->
-                (itemSize / 2).toInt()
-            }
-        } else if (!oddNumberOfVisibleItems && !showPartialItem) {
-            SnapOffsets.Start
-        } else {
-            SnapOffsets.Center
-        }
-
-        val centerItem = (Int.MAX_VALUE / 2)
-        val initialVisibleGlobalIndex =
-            centerItem - centerItem % totalItemCount + initialFirstVisibleIndex
-
-        val listState = rememberLazyListState(
-            initialFirstVisibleItemIndex = initialVisibleGlobalIndex,
-            initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
-        )
-
-        val flingBehavior = rememberSnapperFlingBehavior(
-            lazyListState = listState,
-            snapOffsetForItem = snapOffsetForItem
-        )
-
-        AnimatedCircularListImpl(
-            modifier = listModifier,
+        AnimatedInfiniteList(
+            modifier = if (orientation == Orientation.Horizontal) Modifier.width(widthDp)
+            else Modifier.height(heightDp),
             items = items,
-            lazyListState = listState,
-            flingBehavior = flingBehavior,
-            initialFirstVisibleIndex = initialVisibleGlobalIndex,
+            initialFirstVisibleIndex = initialFirstVisibleIndex,
             visibleItemCount = visibleItemCount,
-            availableSpace = availableSpace,
-            itemSize = itemSizeDp,
+            activeItemSize = itemSizeDp,
+            inactiveItemSize = inActiveItemSizeDp,
             spaceBetweenItems = spaceBetweenItems,
-            totalItemCount = totalItemCount,
-            indexOfSelector = indexOfSelector,
-            itemScaleRange = itemScaleRange.coerceAtMost(visibleItemCount),
+            selectorIndex = selectorIndex,
+            itemScaleRange = itemScaleRange,
             showPartialItem = showPartialItem,
             activeColor = activeColor,
             inactiveColor = inactiveColor,
-            inactiveItemFraction = inactiveItemPercent.coerceIn(0, 100) / 100f,
             orientation = orientation,
             key = key,
             contentType = contentType,
