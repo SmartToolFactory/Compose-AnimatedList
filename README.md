@@ -4,7 +4,10 @@ Animated infinite and finite LazyRow and LazyColumn with scale and color animati
 based on how far they are to selector items
 
 
-https://user-images.githubusercontent.com/35650605/188903459-382f80f1-b77e-427f-9a0d-d50c39dd5406.mp4
+
+https://user-images.githubusercontent.com/35650605/189961296-540efc06-806e-4bd7-8d93-805426f5b562.mp4
+
+
 
 
 ## AnimatedInfiniteLazyRow/Column
