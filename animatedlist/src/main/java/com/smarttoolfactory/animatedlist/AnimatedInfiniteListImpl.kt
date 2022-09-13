@@ -22,6 +22,9 @@ import kotlin.math.absoluteValue
  *  Infinite list with color and scale animation for selecting aspect ratio
  *
  * @param items the data list
+ * @param initialFirstVisibleIndex first visible item of the list. This can be
+ * negative number too. It's in range of [items]. If there are 10 items -2th item is
+ * actually 8th item is the first visible item on screen
  * @param visibleItemCount count of items that are visible at any time
  * @param activeItemSize width or height of selected item
  * @param inactiveItemSize width or height of unselected items
@@ -50,7 +53,7 @@ import kotlin.math.absoluteValue
 internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
     items: List<T>,
-    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    initialFirstVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     activeItemSize: Dp,
     inactiveItemSize: Dp,
@@ -108,8 +111,12 @@ internal fun <T> AnimatedInfiniteList(
         SnapOffsets.Center
     }
 
+    val centerItem = (Int.MAX_VALUE / 2)
+    val initialVisibleGlobalIndex =
+        centerItem - centerItem % totalItemCount + initialFirstVisibleIndex
+
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialFistVisibleIndex,
+        initialFirstVisibleItemIndex = initialVisibleGlobalIndex,
         initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
     )
 
@@ -127,7 +134,7 @@ internal fun <T> AnimatedInfiniteList(
             items = items,
             lazyListState = listState,
             flingBehavior = flingBehavior,
-            initialFistVisibleIndex = initialFistVisibleIndex,
+            initialFirstVisibleIndex = initialVisibleGlobalIndex,
             visibleItemCount = visibleItemCount,
             availableSpace = availableSpace,
             itemSize = activeItemSize,
@@ -180,7 +187,7 @@ internal fun <T> AnimatedInfiniteList(
 internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
     items: List<T>,
-    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    initialFirstVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     inactiveItemPercent: Int = 85,
     spaceBetweenItems: Dp = 4.dp,
@@ -242,8 +249,12 @@ internal fun <T> AnimatedInfiniteList(
             SnapOffsets.Center
         }
 
+        val centerItem = (Int.MAX_VALUE / 2)
+        val initialVisibleGlobalIndex =
+            centerItem - centerItem % totalItemCount + initialFirstVisibleIndex
+
         val listState = rememberLazyListState(
-            initialFirstVisibleItemIndex = initialFistVisibleIndex,
+            initialFirstVisibleItemIndex = initialVisibleGlobalIndex,
             initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
         )
 
@@ -257,7 +268,7 @@ internal fun <T> AnimatedInfiniteList(
             items = items,
             lazyListState = listState,
             flingBehavior = flingBehavior,
-            initialFistVisibleIndex = initialFistVisibleIndex,
+            initialFirstVisibleIndex = initialVisibleGlobalIndex,
             visibleItemCount = visibleItemCount,
             availableSpace = availableSpace,
             itemSize = itemSizeDp,
@@ -283,7 +294,7 @@ private fun <T> AnimatedCircularListImpl(
     items: List<T>,
     lazyListState: LazyListState,
     flingBehavior: FlingBehavior,
-    initialFistVisibleIndex: Int,
+    initialFirstVisibleIndex: Int,
     visibleItemCount: Int,
     availableSpace: Float,
     itemSize: Dp,
@@ -312,7 +323,7 @@ private fun <T> AnimatedCircularListImpl(
         ) { globalIndex ->
             AnimatedItems(
                 lazyListState = lazyListState,
-                initialFistVisibleIndex = initialFistVisibleIndex,
+                initialFirstVisibleIndex = initialFirstVisibleIndex,
                 indexOfSelector = indexOfSelector,
                 itemScaleRange = itemScaleRange,
                 showPartialItem = showPartialItem,
@@ -356,7 +367,7 @@ private fun <T> AnimatedCircularListImpl(
 @Composable
 private fun LazyItemScope.AnimatedItems(
     lazyListState: LazyListState,
-    initialFistVisibleIndex: Int,
+    initialFirstVisibleIndex: Int,
     indexOfSelector: Int,
     itemScaleRange: Int,
     showPartialItem: Boolean,
@@ -382,7 +393,7 @@ private fun LazyItemScope.AnimatedItems(
         derivedStateOf {
             val animationData = getAnimationProgress(
                 lazyListState = lazyListState,
-                initialFistVisibleIndex = initialFistVisibleIndex,
+                initialFirstVisibleIndex = initialFirstVisibleIndex,
                 indexOfSelector = indexOfSelector,
                 itemScaleRange = itemScaleRange,
                 showPartialItem = showPartialItem,
@@ -410,7 +421,7 @@ private fun LazyItemScope.AnimatedItems(
  * [Int.MAX_VALUE] global index count
  *
  * @param lazyListState A state object that can be hoisted to control and observe scrolling
- * @param initialFistVisibleIndex index of item that is at the beginning of the list initially
+ * @param initialFirstVisibleIndex index of item that is at the beginning of the list initially
  * @param indexOfSelector global index of element of selector of infinite items. Item with
  * this index is selected item
  * @param globalIndex index of current item. This index changes for every item in list
@@ -429,7 +440,7 @@ private fun LazyItemScope.AnimatedItems(
  */
 private fun getAnimationProgress(
     lazyListState: LazyListState,
-    initialFistVisibleIndex: Int,
+    initialFirstVisibleIndex: Int,
     indexOfSelector: Int,
     itemScaleRange: Int,
     showPartialItem: Boolean,
@@ -464,7 +475,7 @@ private fun getAnimationProgress(
         // Convert global indexes to indexes in range of 0..visibleItemCount
         // when current item is null on initial run
         val localIndex =
-            (visibleItemCount + globalIndex - initialFistVisibleIndex) % visibleItemCount
+            (visibleItemCount + globalIndex - initialFirstVisibleIndex) % visibleItemCount
         var initialItemCenter = (localIndex * itemSize + localIndex * spaceBetweenItems)
         // If we show partial items offset from 0 by half of items size to right or up
         if (showPartialItem) initialItemCenter -= halfItemSize
@@ -479,14 +490,11 @@ private fun getAnimationProgress(
         inactiveScale = inactiveScale,
         itemSize = itemSize,
         spaceBetweenItems = spaceBetweenItems
-    )
-
-    // This is the fraction between lower bound and 1f. If lower bound is .9f we have
-    // range of 0.9f..1f for scale calculation
-    val scalingInterval = 1f - inactiveScale
+    ).coerceIn(0f, 1f)
 
     val globalSelectedIndex =
         getIndexClosestToSelector(selectedIndex, halfItemSize, selectorPosition, visibleItems)
+
 
     // Index of item in list. If list has 7 items initial item index is 3
     // When selector changes we get what it(in infinite list) corresponds to in item list
@@ -496,10 +504,15 @@ private fun getAnimationProgress(
         indexOfSelector
     }
 
+    // This is the fraction between lower bound and 1f. If lower bound is .9f we have
+    // range of 0.9f..1f for scale calculation
+    val scalingInterval = 1f - inactiveScale
+
     // Scale for color when scale is at lower bound color scale is zero
     // when scale reaches upper bound(1f) color scale is 1f which is target color
     // when argEvaluator evaluates color
-    val colorScale = (scale - inactiveScale) / scalingInterval
+    val colorScale = if (scalingInterval == 0f) 1f
+    else ((scale - inactiveScale) / scalingInterval).coerceIn(0f, 1f)
 
     // Interpolate color between start and end color based on color scale
     val color = lerp(inactiveColor, activeColor, colorScale)

@@ -44,7 +44,7 @@ import com.smarttoolfactory.animatedlist.model.AnimationProgress
 fun <T> AnimatedInfiniteLazyRow(
     modifier: Modifier = Modifier,
     items: List<T>,
-    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    initialFistVisibleIndex: Int = 0,
     activeItemWidth: Dp,
     inactiveItemWidth: Dp,
     visibleItemCount: Int = 5,
@@ -63,7 +63,7 @@ fun <T> AnimatedInfiniteLazyRow(
     AnimatedInfiniteList(
         modifier = modifier,
         items = items,
-        initialFistVisibleIndex = initialFistVisibleIndex,
+        initialFirstVisibleIndex = initialFistVisibleIndex,
         visibleItemCount = visibleItemCount,
         activeItemSize = activeItemWidth,
         inactiveItemSize = inactiveItemWidth,
@@ -112,7 +112,7 @@ fun <T> AnimatedInfiniteLazyRow(
 fun <T> AnimatedInfiniteLazyColumn(
     modifier: Modifier = Modifier,
     items: List<T>,
-    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    initialFirstVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     activeItemHeight: Dp,
     inactiveItemHeight: Dp,
@@ -131,7 +131,7 @@ fun <T> AnimatedInfiniteLazyColumn(
     AnimatedInfiniteList(
         modifier = modifier,
         items = items,
-        initialFistVisibleIndex = initialFistVisibleIndex,
+        initialFirstVisibleIndex = initialFirstVisibleIndex,
         visibleItemCount = visibleItemCount,
         activeItemSize = activeItemHeight,
         inactiveItemSize = inactiveItemHeight,
@@ -181,7 +181,7 @@ fun <T> AnimatedInfiniteLazyColumn(
 fun <T> AnimatedInfiniteLazyRow(
     modifier: Modifier = Modifier,
     items: List<T>,
-    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    initialFirstVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     inactiveItemPercent: Int = 85,
     spaceBetweenItems: Dp = 4.dp,
@@ -199,7 +199,7 @@ fun <T> AnimatedInfiniteLazyRow(
     AnimatedInfiniteList(
         modifier = modifier,
         items = items,
-        initialFistVisibleIndex = initialFistVisibleIndex,
+        initialFirstVisibleIndex = initialFirstVisibleIndex,
         visibleItemCount = visibleItemCount,
         inactiveItemPercent = inactiveItemPercent,
         spaceBetweenItems = spaceBetweenItems,
@@ -247,7 +247,7 @@ fun <T> AnimatedInfiniteLazyRow(
 fun <T> AnimatedInfiniteLazyColumn(
     modifier: Modifier = Modifier,
     items: List<T>,
-    initialFistVisibleIndex: Int = Int.MAX_VALUE / 2,
+    initialFistVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     inactiveItemPercent: Int = 85,
     spaceBetweenItems: Dp = 4.dp,
@@ -265,7 +265,7 @@ fun <T> AnimatedInfiniteLazyColumn(
     AnimatedInfiniteList(
         modifier = modifier,
         items = items,
-        initialFistVisibleIndex = initialFistVisibleIndex,
+        initialFirstVisibleIndex = initialFistVisibleIndex,
         visibleItemCount = visibleItemCount,
         inactiveItemPercent = inactiveItemPercent,
         spaceBetweenItems = spaceBetweenItems,
