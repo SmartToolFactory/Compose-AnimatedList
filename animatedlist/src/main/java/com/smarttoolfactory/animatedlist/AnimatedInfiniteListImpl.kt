@@ -352,7 +352,13 @@ private fun LazyItemScope.AnimatedItems(
 
     val itemSizePx = LocalDensity.current.run { itemSize.toPx() }
 
-    val animationData by remember {
+    val animationData by remember(
+        indexOfSelector,
+        visibleItemCount,
+        inactiveItemScale,
+        itemScaleRange,
+        showPartialItem
+    ) {
         derivedStateOf {
             val animationData = getAnimationProgress(
                 lazyListState = lazyListState,
