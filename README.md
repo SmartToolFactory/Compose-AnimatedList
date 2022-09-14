@@ -5,7 +5,10 @@ based on how far they are to selector items
 
 
 
-https://user-images.githubusercontent.com/35650605/189961296-540efc06-806e-4bd7-8d93-805426f5b562.mp4
+
+https://user-images.githubusercontent.com/35650605/190077938-89d9f79a-06df-4052-b1fa-eee5651bd861.mp4
+
+
 
 
 
