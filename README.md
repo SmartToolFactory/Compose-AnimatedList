@@ -1,5 +1,7 @@
 # Compose AnimatedList
 
+[![](https://jitpack.io/v/SmartToolFactory/Compose-AnimatedList.svg)](https://jitpack.io/#SmartToolFactory/Compose-AnimatedList)
+
 Animated infinite and finite LazyRow and LazyColumn with scale and color animations on scroll change
 based on how far they are to selector items
 
@@ -9,6 +11,29 @@ based on how far they are to selector items
 https://user-images.githubusercontent.com/35650605/190077938-89d9f79a-06df-4052-b1fa-eee5651bd861.mp4
 
 
+## Gradle Setup
+
+To get a Git project into your build:
+
+* Step 1. Add the JitPack repository to your build file Add it in your root build.gradle at the end
+  of repositories:
+
+```
+allprojects {
+  repositories {
+      ...
+      maven { url 'https://jitpack.io' }
+  }
+}
+```
+
+* Step 2. Add the dependency
+
+```
+dependencies {
+    implementation 'com.github.SmartToolFactory:Compose-AnimatedList:Tag'
+}
+```
 
 
 
