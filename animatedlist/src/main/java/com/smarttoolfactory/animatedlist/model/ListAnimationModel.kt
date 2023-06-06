@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.Color
  * it's real value of this index
  * @param itemIndex index of current item in range of total item count. It can be in range
  * of 0..item count -1
+ * @param distanceToSelector distance of this item to selector in pixels. This value
+ * can be used in a click listener to scroll this item to selection position with animation.
  */
 @Immutable
 data class AnimationProgress(
@@ -22,5 +24,6 @@ data class AnimationProgress(
     val itemOffset: Int,
     val itemFraction: Float,
     val globalItemIndex: Int,
-    val itemIndex: Int
+    val itemIndex: Int,
+    val distanceToSelector: Float
 )

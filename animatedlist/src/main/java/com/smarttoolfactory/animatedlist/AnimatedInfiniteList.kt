@@ -3,6 +3,7 @@ package com.smarttoolfactory.animatedlist
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -57,7 +58,11 @@ fun <T> AnimatedInfiniteLazyRow(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, item: T, width: Dp
+        animationProgress: AnimationProgress,
+        index: Int,
+        item: T,
+        size: Dp,
+        lazyListState: LazyListState
     ) -> Unit
 ) {
     AnimatedInfiniteList(
@@ -125,7 +130,11 @@ fun <T> AnimatedInfiniteLazyColumn(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, item: T, height: Dp
+        animationProgress: AnimationProgress,
+        index: Int,
+        item: T,
+        size: Dp,
+        lazyListState: LazyListState
     ) -> Unit
 ) {
     AnimatedInfiniteList(
@@ -193,7 +202,11 @@ fun <T> AnimatedInfiniteLazyRow(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, item: T, width: Dp
+        animationProgress: AnimationProgress,
+        index: Int,
+        item: T,
+        size: Dp,
+        lazyListState: LazyListState
     ) -> Unit
 ) {
     AnimatedInfiniteList(
@@ -259,7 +272,11 @@ fun <T> AnimatedInfiniteLazyColumn(
     key: ((index: Int) -> Any)? = null,
     contentType: (index: Int) -> Any? = { null },
     itemContent: @Composable LazyItemScope.(
-        animationProgress: AnimationProgress, index: Int, item: T, height: Dp
+        animationProgress: AnimationProgress,
+        index: Int,
+        item: T,
+        size: Dp,
+        lazyListState: LazyListState
     ) -> Unit
 ) {
     AnimatedInfiniteList(
