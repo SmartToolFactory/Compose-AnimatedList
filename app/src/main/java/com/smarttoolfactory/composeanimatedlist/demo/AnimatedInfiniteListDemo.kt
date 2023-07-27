@@ -95,7 +95,7 @@ fun AnimatedInfiniteListDemo() {
                         indication = null
                     ) {
                         coroutineScope.launch {
-                            lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                            lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                         }
                     },
                     color = color,
@@ -139,7 +139,7 @@ fun AnimatedInfiniteListDemo() {
                             indication = null
                         ) {
                             coroutineScope.launch {
-                                lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                                lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                             }
                         },
                     contentAlignment = Alignment.Center
@@ -181,7 +181,7 @@ fun AnimatedInfiniteListDemo() {
                             indication = null
                         ) {
                             coroutineScope.launch {
-                                lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                                lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                             }
                         },
                     contentAlignment = Alignment.Center
@@ -229,7 +229,7 @@ fun AnimatedInfiniteListDemo() {
                         indication = null
                     ) {
                         coroutineScope.launch {
-                            lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                            lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                         }
                     },
                 snack = item
@@ -263,7 +263,7 @@ fun AnimatedInfiniteListDemo() {
                             indication = null
                         ) {
                             coroutineScope.launch {
-                                lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                                lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                             }
                         },
                     contentAlignment = Alignment.Center

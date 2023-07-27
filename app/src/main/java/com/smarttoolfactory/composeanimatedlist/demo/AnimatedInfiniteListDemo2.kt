@@ -143,7 +143,7 @@ fun AnimatedInfiniteListDemo2() {
             selectorIndex = selectorIndex.toInt(),
             itemScaleRange = itemScaleRange.toInt(),
             showPartialItem = showPartialItem,
-            spaceBetweenItems = 2.dp,
+            spaceBetweenItems = 16.dp,
             inactiveItemPercent = inactiveItemFraction.toInt(),
             inactiveColor = InactiveColor,
             activeColor = ActiveColor
@@ -167,7 +167,7 @@ fun AnimatedInfiniteListDemo2() {
                         indication = null
                     ) {
                         coroutineScope.launch {
-                            lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                            lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                         }
                     },
                 snack = item
@@ -204,7 +204,7 @@ fun AnimatedInfiniteListDemo2() {
                             indication = null
                         ) {
                             coroutineScope.launch {
-                                lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                                lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                             }
                         },
                     contentAlignment = Alignment.Center

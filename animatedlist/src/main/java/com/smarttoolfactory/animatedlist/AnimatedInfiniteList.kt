@@ -193,7 +193,7 @@ fun <T> AnimatedInfiniteLazyRow(
     initialFirstVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     inactiveItemPercent: Int = 85,
-    spaceBetweenItems: Dp = 4.dp,
+    spaceBetweenItems: Dp = 16.dp,
     selectorIndex: Int = -1,
     itemScaleRange: Int = 1,
     showPartialItem: Boolean = false,

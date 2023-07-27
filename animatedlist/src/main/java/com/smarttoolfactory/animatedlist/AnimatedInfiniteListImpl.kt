@@ -79,7 +79,7 @@ internal fun <T> AnimatedInfiniteList(
     visibleItemCount: Int = 5,
     activeItemSize: Dp,
     inactiveItemSize: Dp,
-    spaceBetweenItems: Dp = 4.dp,
+    spaceBetweenItems: Dp = 16.dp,
     selectorIndex: Int = -1,
     itemScaleRange: Int = 1,
     showPartialItem: Boolean = false,
@@ -215,7 +215,7 @@ internal fun <T> AnimatedInfiniteList(
     initialFirstVisibleIndex: Int = 0,
     visibleItemCount: Int = 5,
     inactiveItemPercent: Int = 85,
-    spaceBetweenItems: Dp = 4.dp,
+    spaceBetweenItems: Dp = 16.dp,
     selectorIndex: Int = -1,
     itemScaleRange: Int = 1,
     showPartialItem: Boolean = false,
@@ -491,7 +491,6 @@ private fun getAnimationProgress(
         initialItemCenter.toInt()
     }
 
-
     // get scale of current item based on distance between items center to selector
     val scale = getScale(
         rangeOfSelection = itemScaleRange,
@@ -527,6 +526,12 @@ private fun getAnimationProgress(
     // Interpolate color between start and end color based on color scale
     val color = lerp(inactiveColor, activeColor, colorScale)
 
+    val distanceToSelector = if (isRangeOfSelectionOdd) {
+        itemCenter - selectorPosition
+    } else {
+        (itemCenter + itemSize / 2) - selectorPosition
+    }
+
     return AnimationProgress(
         scale = scale,
         color = color,
@@ -534,7 +539,7 @@ private fun getAnimationProgress(
         itemFraction = itemCenter / availableSpace,
         globalItemIndex = globalSelectedIndex,
         itemIndex = itemIndex,
-        distanceToSelector = selectorPosition - itemCenter
+        distanceToSelector = distanceToSelector
     )
 }
 

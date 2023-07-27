@@ -165,7 +165,7 @@ AnimatedInfiniteLazyRow(
                     indication = null
                 ) {
                     coroutineScope.launch {
-                        lazyListState.animateScrollBy(-animationProgress.distanceToSelector)
+                        lazyListState.animateScrollBy(animationProgress.distanceToSelector)
                     }
                 },
             contentAlignment = Alignment.Center
