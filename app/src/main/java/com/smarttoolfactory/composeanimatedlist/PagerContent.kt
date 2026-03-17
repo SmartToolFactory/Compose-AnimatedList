@@ -2,24 +2,27 @@ package com.smarttoolfactory.composeanimatedlist
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.PagerState
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
-@ExperimentalPagerApi
 @Composable
 fun PagerContent(content: Map<String, @Composable () -> Unit>) {
 
-    val pagerState: PagerState = rememberPagerState(initialPage = 0)
+    val pagerState: PagerState = rememberPagerState(initialPage = 0) {
+        content.size
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -29,21 +32,18 @@ fun PagerContent(content: Map<String, @Composable () -> Unit>) {
     Scaffold(
         topBar = {
             if (content.size < 3) {
-                TabRow(
+                PrimaryTabRow(
                     modifier = Modifier.fillMaxWidth(),
-                    // Our selected tab is our current page
                     selectedTabIndex = pagerState.currentPage,
-                    // Override the indicator, using the provided pagerTabIndicatorOffset modifier
-                    indicator = { tabPositions: List<TabPosition> ->
-                        TabRowDefaults.Indicator(
+                    indicator = {
+                        TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(
-                                tabPositions[pagerState.currentPage]
+                                selectedTabIndex = pagerState.currentPage
                             ),
                             height = 4.dp
                         )
                     },
                 ) {
-                    // Add tabs for all of our pages
                     tabList.forEachIndexed { index, title ->
                         Tab(
                             text = { Text(title) },
@@ -57,22 +57,19 @@ fun PagerContent(content: Map<String, @Composable () -> Unit>) {
                     }
                 }
             } else {
-                ScrollableTabRow(
+                PrimaryScrollableTabRow(
                     modifier = Modifier.fillMaxWidth(),
-                    // Our selected tab is our current page
                     selectedTabIndex = pagerState.currentPage,
-                    // Override the indicator, using the provided pagerTabIndicatorOffset modifier
-                    indicator = { tabPositions: List<TabPosition> ->
-                        TabRowDefaults.Indicator(
+                    indicator = {
+                        TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(
-                                tabPositions[pagerState.currentPage]
+                                selectedTabIndex = pagerState.currentPage
                             ),
                             height = 4.dp
                         )
                     },
                     edgePadding = 4.dp
                 ) {
-                    // Add tabs for all of our pages
                     tabList.forEachIndexed { index, title ->
                         Tab(
                             text = { Text(title) },
@@ -87,11 +84,10 @@ fun PagerContent(content: Map<String, @Composable () -> Unit>) {
                 }
             }
         }
-    ) {
+    ) { innerPadding ->
         HorizontalPager(
-            modifier = Modifier.padding(it),
-            state = pagerState,
-            count = content.size
+            modifier = Modifier.padding(innerPadding),
+            state = pagerState
         ) { page: Int ->
             pages[page].invoke()
 

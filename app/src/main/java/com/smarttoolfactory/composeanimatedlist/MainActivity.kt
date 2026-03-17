@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPagerApi::class)
-
 package com.smarttoolfactory.composeanimatedlist
 
 import android.os.Bundle
@@ -13,7 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.google.accompanist.pager.ExperimentalPagerApi
+import com.smarttoolfactory.composeanimatedlist.demo.AnimatedFiniteListParamsDemo
 import com.smarttoolfactory.composeanimatedlist.demo.AnimatedInfiniteListDemo
 import com.smarttoolfactory.composeanimatedlist.demo.AnimatedInfiniteListDemo2
 import com.smarttoolfactory.composeanimatedlist.ui.theme.ComposeAnimatedListTheme
@@ -36,7 +34,8 @@ class MainActivity : ComponentActivity() {
                         PagerContent(
                             content = mapOf<String, @Composable () -> Unit>(
                                 "InfiniteList" to { AnimatedInfiniteListDemo() },
-                                "InfiniteList Params" to { AnimatedInfiniteListDemo2() }
+                                "InfiniteList Params" to { AnimatedInfiniteListDemo2() },
+                                "FiniteList Params" to { AnimatedFiniteListParamsDemo() }
                             )
                         )
                     }

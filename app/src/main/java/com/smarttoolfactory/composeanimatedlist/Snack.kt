@@ -8,9 +8,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
-import coil.size.Size
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.placeholder
 
 @Immutable
 data class Snack(
@@ -30,7 +30,6 @@ fun SnackCard(
         model = ImageRequest.Builder(LocalContext.current)
             .data(snack.imageUrl)
             .placeholder(R.drawable.placeholder)
-            .size(Size.ORIGINAL) // Set the target size to load the image at.
             .build()
     )
 

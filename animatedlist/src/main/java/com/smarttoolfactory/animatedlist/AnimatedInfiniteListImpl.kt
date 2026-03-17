@@ -1,9 +1,9 @@
-@file:OptIn(ExperimentalSnapperApi::class)
-
 package com.smarttoolfactory.animatedlist
 
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListItemInfo
-import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -32,12 +31,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.smarttoolfactory.animatedlist.model.AnimationProgress
-import dev.chrisbanes.snapper.ExperimentalSnapperApi
-import dev.chrisbanes.snapper.SnapOffsets
-import dev.chrisbanes.snapper.SnapperLayoutInfo
-import dev.chrisbanes.snapper.SnapperLayoutItemInfo
-import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
-import kotlin.math.absoluteValue
 
 /**
  *  Infinite list with color and scale animation for selecting aspect ratio
@@ -70,7 +63,6 @@ import kotlin.math.absoluteValue
  * type will be considered compatible.
  * @param itemContent the content displayed by a single item
  */
-@OptIn(ExperimentalSnapperApi::class)
 @Composable
 internal fun <T> AnimatedInfiniteList(
     modifier: Modifier = Modifier,
@@ -127,14 +119,21 @@ internal fun <T> AnimatedInfiniteList(
     } else selectorIndex)
         .coerceIn(0, visibleItemCount - 1)
 
-    val snapOffsetForItem = if (oddNumberOfVisibleItems && showPartialItem) {
-        { _: SnapperLayoutInfo, _: SnapperLayoutItemInfo ->
-            (itemSize / 2).toInt()
+    val snapPosition = if (oddNumberOfVisibleItems && showPartialItem) {
+        object : SnapPosition {
+            override fun position(
+                layoutSize: Int,
+                itemSize: Int,
+                beforeContentPadding: Int,
+                afterContentPadding: Int,
+                itemIndex: Int,
+                itemCount: Int
+            ): Int = itemSize / 2
         }
     } else if (!oddNumberOfVisibleItems && !showPartialItem) {
-        SnapOffsets.Start
+        SnapPosition.Start
     } else {
-        SnapOffsets.Center
+        SnapPosition.Center
     }
 
     val centerItem = (Int.MAX_VALUE / 2)
@@ -146,9 +145,9 @@ internal fun <T> AnimatedInfiniteList(
         initialFirstVisibleItemScrollOffset = if (showPartialItem) (itemSize / 2).toInt() else 0
     )
 
-    val flingBehavior = rememberSnapperFlingBehavior(
+    val flingBehavior = rememberSnapFlingBehavior(
         lazyListState = listState,
-        snapOffsetForItem = snapOffsetForItem
+        snapPosition = snapPosition
     )
 
     Box(
@@ -541,114 +540,4 @@ private fun getAnimationProgress(
         itemIndex = itemIndex,
         distanceToSelector = distanceToSelector
     )
-}
-
-/**
- * Get index of item that is closest to selector position
- */
-private fun getIndexClosestToSelector(
-    selectedIndex: Int,
-    halfItemSize: Float,
-    selectorPosition: Float,
-    visibleItems: List<LazyListItemInfo>
-): Int {
-    var distance = Int.MAX_VALUE
-
-    var globalSelectedIndex = selectedIndex
-
-    visibleItems.forEach {
-        val itemDistanceToSelector = ((it.offset + halfItemSize) - selectorPosition).absoluteValue
-        if (itemDistanceToSelector < distance) {
-            distance = itemDistanceToSelector.toInt()
-            globalSelectedIndex = it.index
-        }
-    }
-
-    return globalSelectedIndex
-}
-
-/**
- *  Get position of selector item
- *  ```
- *  3 item range of selection <> = item, -- space between items
- *     SELECTOR
- * --<>--<|>--<>
- * 4 item range of selection
- *       SELECTOR
- * --<>--<>-|-<>--<>--
- *  ```
- */
-private fun getSelectorPosition(
-    isRangeOfSelectionOdd: Boolean,
-    indexOfSelector: Int,
-    itemSize: Float,
-    spaceBetweenItems: Float
-): Float {
-    val halfItemSize = itemSize / 2
-
-    return if (isRangeOfSelectionOdd) {
-        // Scale range is odd so selector position is the center of item
-        //  with indexOfSelector index
-        (indexOfSelector) * (itemSize + spaceBetweenItems) + halfItemSize
-    } else {
-        // Scale range is even so selector position is space between indexOfSelector one
-        // and next one
-        (indexOfSelector) * (itemSize + spaceBetweenItems) + itemSize + spaceBetweenItems / 2
-    }
-}
-
-/**
- * get scale based on whether it's initial run of list,
- * [LazyListState]'S [LazyListLayoutInfo.visibleItemsInfo]  list is empty,
- * or current scroll state of list.
- *
- * @param inactiveScale lower scale that items can be scaled to. It should be less than 1f
- * @param itemSize width/height of each item
- * @param spaceBetweenItems space between each item
- * @param selectorPosition position of selector or selected item
- * @param itemCenter offset of item from start of the list's x or y zero position
- */
-private fun getScale(
-    rangeOfSelection: Int,
-    selectorPosition: Float,
-    itemCenter: Int,
-    inactiveScale: Float,
-    itemSize: Float,
-    spaceBetweenItems: Float,
-): Float {
-
-    // Check how far this item is to selector index.
-    val distanceToSelector = (selectorPosition - itemCenter).absoluteValue
-    // When offset of an item is in this region it gets scaled.
-    // region size is calculated as
-    // half space + (item width or height) + half space
-    val scaleRegionSize = (itemSize + spaceBetweenItems) * (rangeOfSelection + 1) / 2
-
-    return calculateScale(
-        distanceToSelector,
-        scaleRegionSize,
-        inactiveScale
-    )
-}
-
-/**
- * Calculate scale that is inside scale region based on [minimum]..1f range
- */
-private fun calculateScale(
-    distanceToSelector: Float,
-    scaleRegionSize: Float,
-    minimum: Float
-): Float {
-    return if (distanceToSelector < scaleRegionSize) {
-
-        // item is in scale region. Check where exactly it is in this region
-        val fraction = (scaleRegionSize - distanceToSelector) / scaleRegionSize
-
-        // scale fraction between start and 1f.
-        // If start is .9f and fraction is 50% our scale is .9f + .1f*50/100 = .95f
-        lerp(start = minimum, stop = 1f, fraction = fraction)
-    } else {
-        minimum
-
-    }.coerceIn(minimum, 1f)
 }
