@@ -1,41 +1,37 @@
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.kotlinCompose)
 }
 
 android {
-    namespace 'com.smarttoolfactory.composeanimatedlist'
-    compileSdk 33
+    namespace = 'com.smarttoolfactory.composeanimatedlist'
+    compileSdk = Integer.parseInt(libs.versions.compileSdk.get())
 
     defaultConfig {
-        minSdk 21
-        targetSdk 33
+        minSdk = Integer.parseInt(libs.versions.minSdk.get())
+        targetSdk = Integer.parseInt(libs.versions.targetSdk.get())
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
         jvmTarget = '17'
     }
     buildFeatures {
-        compose true
+        compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.7"
-    }
-
-    packagingOptions {
+    packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
@@ -43,52 +39,30 @@ android {
 }
 
 dependencies {
-
     implementation project(':animatedlist')
 
-    implementation 'androidx.core:core-ktx:1.10.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
+    implementation platform(libs.androidxComposeBom)
+    androidTestImplementation platform(libs.androidxComposeBom)
 
+    implementation libs.androidxCoreKtx
+    implementation libs.androidxLifecycleRuntimeKtx
+    implementation libs.androidxComposeUi
+    implementation libs.androidxComposeUiToolingPreview
+    implementation libs.androidxComposeFoundation
+    implementation libs.androidxComposeMaterial
+    implementation libs.androidxComposeMaterialIconsCore
+    implementation libs.androidxComposeMaterialIconsExtended
+    implementation libs.androidxActivityCompose
+    implementation libs.androidxLifecycleViewmodelCompose
+    implementation libs.androidxComposeMaterial3
+    implementation libs.androidxNavigationCompose
+    implementation libs.coilCompose
+    implementation libs.coilNetworkOkhttp
 
-    implementation "dev.chrisbanes.snapper:snapper:0.3.0"
-
-    implementation "androidx.compose.ui:ui:$compose_version"
-    // Tooling support (Previews, etc.)
-    implementation "androidx.compose.ui:ui-tooling:$compose_version"
-    // Foundation (Border, Background, Box, Image, Scroll, shapes, animations, etc.)
-    implementation "androidx.compose.foundation:foundation:$compose_version"
-    // Material Design
-    implementation "androidx.compose.material:material:$compose_version"
-    // Material design icons
-    implementation "androidx.compose.material:material-icons-core:$compose_version"
-    implementation "androidx.compose.material:material-icons-extended:$compose_version"
-    // Integration with activities
-    implementation 'androidx.activity:activity-compose:1.7.2'
-    // Integration with ViewModels
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
-
-    // Material Design 3 for Compose
-    implementation "androidx.compose.material3:material3:1.2.0-alpha02"
-
-    def nav_compose_version = "2.5.3"
-    implementation "androidx.navigation:navigation-compose:$nav_compose_version"
-
-    def accompanist_version = "0.30.0"
-    // Accompanist
-    implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist_version"
-    implementation "com.google.accompanist:accompanist-pager:$accompanist_version"
-    implementation "com.google.accompanist:accompanist-drawablepainter:$accompanist_version"
-
-    // Coil
-    implementation("io.coil-kt:coil-compose:2.3.0")
-
-    // Photo Picker
-    implementation("com.google.modernstorage:modernstorage-photopicker:1.0.0-alpha06")
-
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
-    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
-    debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
+    testImplementation libs.junit4
+    androidTestImplementation libs.androidxTestExtJunit
+    androidTestImplementation libs.androidxTestEspressoCore
+    androidTestImplementation libs.androidxComposeUiTestJunit4
+    debugImplementation libs.androidxComposeUiTooling
+    debugImplementation libs.androidxComposeUiTestManifest
 }
