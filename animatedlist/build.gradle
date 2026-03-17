@@ -1,56 +1,137 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidKotlinMultiplatformLibrary)
+    alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.kotlinCompose)
+    id 'maven-publish'
 }
 
-android {
-    namespace = 'com.smarttoolfactory.animatedlist'
-    compileSdk = Integer.parseInt(libs.versions.compileSdk.get())
+def publishGroup = providers.gradleProperty("mavenGroup")
+        .orElse(providers.environmentVariable("MAVEN_GROUP"))
+        .orElse("com.smarttoolfactory")
+def publishArtifactId = providers.gradleProperty("mavenArtifactId")
+        .orElse(providers.environmentVariable("MAVEN_ARTIFACT_ID"))
+        .orElse("compose-animatedlist")
+def publishVersion = providers.gradleProperty("mavenVersion")
+        .orElse(providers.environmentVariable("MAVEN_VERSION"))
+        .orElse("0.1.0-SNAPSHOT")
+def publishUrl = providers.gradleProperty("mavenPublishUrl")
+        .orElse(providers.environmentVariable("MAVEN_PUBLISH_URL"))
+def publishUsername = providers.gradleProperty("mavenPublishUsername")
+        .orElse(providers.environmentVariable("MAVEN_PUBLISH_USERNAME"))
+def publishPassword = providers.gradleProperty("mavenPublishPassword")
+        .orElse(providers.environmentVariable("MAVEN_PUBLISH_PASSWORD"))
 
-    defaultConfig {
+group = publishGroup.get()
+version = publishVersion.get()
+
+kotlin {
+    jvmToolchain(21)
+
+    android {
+        namespace = 'com.smarttoolfactory.animatedlist'
+        compileSdk = Integer.parseInt(libs.versions.compileSdk.get())
         minSdk = Integer.parseInt(libs.versions.minSdk.get())
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
-    }
+        withHostTestBuilder {}.configure {}
+        withDeviceTestBuilder {
+            it.sourceSetTreeName = "test"
+        }
 
-    buildTypes {
-        release {
-            minifyEnabled = false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+
+        optimization {
+            consumerKeepRules.publish = true
+            consumerKeepRules.file("consumer-rules.pro")
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-    buildFeatures {
-        compose = true
-    }
-    packaging {
-        resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    sourceSets {
+        commonMain {
+            kotlin.srcDir('src/main/java')
+            dependencies {
+                api(compose.runtime)
+                api(compose.ui)
+                api(compose.foundation)
+            }
+        }
+        androidHostTest {
+            kotlin.srcDir('src/test/java')
+            dependencies {
+                implementation libs.junit4
+            }
+        }
+        androidDeviceTest {
+            kotlin.srcDir('src/androidTest/java')
+            dependencies {
+                implementation libs.androidxTestExtJunit
+                implementation libs.androidxTestEspressoCore
+                implementation libs.androidxComposeUiTestJunit4
+            }
         }
     }
 }
 
 dependencies {
-    implementation platform(libs.androidxComposeBom)
-    androidTestImplementation platform(libs.androidxComposeBom)
+    androidRuntimeClasspath(libs.androidxComposeUiTestManifest)
+}
 
-    implementation libs.androidxCoreKtx
-    implementation libs.androidxComposeUi
-    implementation libs.androidxComposeFoundation
-    implementation libs.androidxComposeMaterial
+publishing {
+    repositories {
+        maven {
+            def hasRemotePublishUrl = publishUrl.isPresent()
 
-    testImplementation libs.junit4
-    androidTestImplementation libs.androidxTestExtJunit
-    androidTestImplementation libs.androidxTestEspressoCore
-    androidTestImplementation libs.androidxComposeUiTestJunit4
-    debugImplementation libs.androidxComposeUiTooling
-    debugImplementation libs.androidxComposeUiTestManifest
+            name = hasRemotePublishUrl ? "targetMaven" : "localBuild"
+            url = hasRemotePublishUrl
+                    ? uri(publishUrl.get())
+                    : uri(layout.buildDirectory.dir("repo").get().asFile)
+
+            if (hasRemotePublishUrl) {
+                credentials {
+                    username = publishUsername.orNull
+                    password = publishPassword.orNull
+                }
+            }
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications.withType(MavenPublication).configureEach { publication ->
+            def baseArtifactId = publishArtifactId.get()
+
+            artifactId = publication.name == "kotlinMultiplatform"
+                    ? baseArtifactId
+                    : "${baseArtifactId}-${publication.name.toLowerCase(Locale.ROOT)}"
+
+            pom {
+                name = "Compose AnimatedList"
+                description = "Animated finite and infinite Compose lazy lists for Kotlin Multiplatform."
+                url = "https://github.com/smarttoolfactory/ComposeAnimatedList"
+
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "smarttoolfactory"
+                        name = "SmartToolFactory"
+                    }
+                }
+            }
+        }
+    }
 }

@@ -1,6 +1,7 @@
 [versions]
 agp = "9.1.0"
 kotlin = "2.3.20"
+composeMultiplatform = "1.10.0"
 compileSdk = "36"
 minSdk = "23"
 targetSdk = "36"
@@ -40,5 +41,8 @@ androidxTestEspressoCore = { group = "androidx.test.espresso", name = "espresso-
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
